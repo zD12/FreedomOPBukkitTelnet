@@ -34,7 +34,7 @@ public class TelnetListener extends Handler implements CommandSender
 	MCTelnet parent;
 	String ip;
 	String passRegex = "[^a-zA-Z0-9\\-\\.\\_]";
-	String commandRegex = "[^a-zA-Z0-9 \\-\\.\\_\\\"]";
+    String commandRegex = "[^\\x20-\\x7E§]";
 
 	public TelnetListener(Socket inSock, MCTelnet iparent)
 	{
@@ -42,7 +42,7 @@ public class TelnetListener extends Handler implements CommandSender
 		clientSocket = inSock;
 		parent = iparent;
 		passRegex = parent.getConfiguration().getString("passwordRegex", passRegex);
-		commandRegex = parent.getConfiguration().getString("commandRegex", commandRegex);
+		//commandRegex = parent.getConfiguration().getString("commandRegex", commandRegex);
 		ip = clientSocket.getInetAddress().toString();
 		listenThread = new Thread(new Runnable()
 		{
@@ -170,7 +170,7 @@ public class TelnetListener extends Handler implements CommandSender
 				while (run && clientSocket.isConnected() && isAuth)
 				{
 					String command = "";
-					command = instream.readLine().replaceAll(commandRegex, "");
+					command = instream.readLine().replaceAll(commandRegex, "").trim();
 					if (command.equals("exit"))
 					{
 						run = false;
