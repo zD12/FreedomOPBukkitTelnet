@@ -1,0 +1,8 @@
+# Port to bind to:
+port: 8765
+
+# Address to listen on, leave blank for all:
+address:
+  
+# Main connection password, must be defined:
+password:

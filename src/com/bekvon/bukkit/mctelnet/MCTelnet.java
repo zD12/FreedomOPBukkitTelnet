@@ -1,251 +1,206 @@
 package com.bekvon.bukkit.mctelnet;
 
+import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandSender;
-import org.bukkit.command.ConsoleCommandSender;
-import org.bukkit.craftbukkit.CraftServer;
 import org.bukkit.plugin.java.JavaPlugin;
-import java.math.BigInteger;
 import java.net.InetAddress;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.Iterator;
-import java.util.Map.Entry;
-import org.bukkit.util.config.ConfigurationNode;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 
 public class MCTelnet extends JavaPlugin
 {
-	private ServerSocket listenerSocket;
-	private ArrayList<TelnetListener> clientHolder;
-	private Thread listenerThread;
-	private boolean run = false;
-	int port = 8765;
-	InetAddress listenAddress;
+    private static final String CONFIG_FILE = "config.yml";
+    
+    private static final Logger log = Logger.getLogger("Minecraft");
+    
+    private ServerSocket listenerSocket = null;
+    private ArrayList<TelnetListener> clientHolder;
+    private Thread listenerThread = null;
+    private boolean is_running = false;
+    private int port = 8765;
+    private InetAddress listenAddress = null;
+    
+    protected String password = null;
+    
+    @Override
+    public void onEnable()
+    {
+        try
+        {
+            log.log(Level.INFO, "[" + getDescription().getName() + "]: Enabled - Version " + this.getDescription().getVersion() + " by bekvon, revamped by Madgeek1450.");
+            log.log(Level.INFO, "[" + getDescription().getName() + "]: Starting server.");
+            
+            TelnetUtil.createDefaultConfiguration(CONFIG_FILE, this, getFile());
+            FileConfiguration config = YamlConfiguration.loadConfiguration(new File(getDataFolder(), CONFIG_FILE));
+            
+            password = config.getString("password", null);
+            if (password == null)
+            {
+                log.log(Level.SEVERE, "[" + getDescription().getName() + "]: Password is not defined in config file! Can't start server!");
+                return;
+            }
 
-	public MCTelnet()
-	{
-	}
+            port = config.getInt("port", port);
 
-	public void onDisable()
-	{
-		run = false;
-		if (listenerSocket != null)
-		{
-			try
-			{
-				synchronized (listenerSocket)
-				{
-					if (listenerSocket != null)
-					{
-						listenerSocket.close();
-					}
-				}
-			}
-			catch (IOException ex)
-			{
-				Logger.getLogger("Minecraft").log(Level.SEVERE, null, ex);
-			}
-		}
-		try
-		{
-			Thread.sleep(1000);
-		}
-		catch (InterruptedException ex)
-		{
-			Logger.getLogger(MCTelnet.class.getName()).log(Level.SEVERE, null, ex);
-		}
-	}
+            String address = config.getString("address", null);
+            if (address != null)
+            {
+                try
+                {
+                    listenAddress = null;
+                    listenAddress = InetAddress.getByName(address);
+                }
+                catch (UnknownHostException ex)
+                {
+                    log.log(Level.SEVERE, "[" + getDescription().getName() + "]: Unknown host: " + address);
+                    return;
+                }
+            }
+            else
+            {
+                address = "*";
+            }
 
-	public void onEnable()
-	{
-		try
-		{
-			Logger.getLogger("Minecraft").log(Level.INFO, "[MCTelnet] - Starting Up! Version: " + this.getDescription().getVersion() + " by bekvon");
-			run = true;
-			this.getConfiguration().load();
-			testConfig();
-			if (this.getConfiguration().getBoolean("encryptPasswords", false))
-			{
-				encryptPasswords();
-			}
-			port = this.getConfiguration().getInt("telnetPort", port);
-			try
-			{
-				String address = this.getConfiguration().getString("listenAddress", null);
-				if (address != null)
-				{
-					listenAddress = InetAddress.getByName(address);
-				}
-			}
-			catch (Exception ex)
-			{
-				System.out.println("[MCTelnet] Exception when trying to binding to custom address:" + ex.getMessage());
-			}
-			if (listenAddress != null)
-			{
-				listenerSocket = new java.net.ServerSocket(port, 10, listenAddress);
-			}
-			else
-			{
-				listenerSocket = new java.net.ServerSocket(port, 10);
-			}
-			clientHolder = new ArrayList<TelnetListener>();
-			listenerThread = new Thread(new Runnable()
-			{
-				public void run()
-				{
-					acceptConnections();
-				}
-			});
-			listenerThread.start();
-			Field cfield = CraftServer.class.getDeclaredField("console");
-			cfield.setAccessible(true);
-			Logger.getLogger("Minecraft").log(Level.INFO, "[MCTelnet] - Listening on: " + listenerSocket.getInetAddress().getHostAddress() + ":" + port);
-		}
-		catch (Exception ex)
-		{
-			Logger.getLogger("Minecraft").log(Level.SEVERE, "[MCTelnet] - Unable to Enable! Error: " + ex.getMessage());
-			this.setEnabled(false);
-		}
-	}
+            try
+            {
+                if (listenAddress != null)
+                {
+                    listenerSocket = new java.net.ServerSocket(port, 10, listenAddress);
+                }
+                else
+                {
+                    listenerSocket = new java.net.ServerSocket(port);
+                }
+                
+                String host_ip = listenerSocket.getInetAddress().getHostAddress();
+                if (host_ip.equals("0.0.0.0"))
+                {
+                    host_ip = "*";
+                }
 
-	private void encryptPasswords()
-	{
-		Map<String, ConfigurationNode> users = this.getConfiguration().getNodes("users");
-		if (users != null)
-		{
-			Iterator<Entry<String, ConfigurationNode>> thisIt = users.entrySet().iterator();
-			if (thisIt != null)
-			{
-				while (thisIt.hasNext())
-				{
-					Entry<String, ConfigurationNode> thisEntry = thisIt.next();
-					if (thisEntry != null)
-					{
-						ConfigurationNode thisNode = thisEntry.getValue();
-						if (thisNode != null && !thisNode.getBoolean("passEncrypted", false))
-						{
-							this.getConfiguration().setProperty("users." + thisEntry.getKey() + ".password", hashPassword(thisNode.getString("password")));
-							this.getConfiguration().setProperty("users." + thisEntry.getKey() + ".passEncrypted", true);
-							this.getConfiguration().save();
-						}
-					}
-				}
-			}
-		}
-	}
+                log.log(Level.INFO, "[" + getDescription().getName() + "]: Server started on " + host_ip + ":" + port);
+            }
+            catch (IOException ex)
+            {
+                log.log(Level.SEVERE, "[" + getDescription().getName() + "]: Cant bind to " + address + ":" + port);
+            }
 
-	public static String hashPassword(String password)
-	{
-		String hashword = null;
-		try
-		{
-			MessageDigest md5 = MessageDigest.getInstance("MD5");
-			md5.update(password.getBytes());
-			BigInteger hash = new BigInteger(1, md5.digest());
-			hashword = hash.toString(16);
-		}
-		catch (NoSuchAlgorithmException nsae)
-		{
-		}
-		return hashword;
-	}
+            clientHolder = new ArrayList<TelnetListener>();
+            
+            is_running = true;
 
-	private void acceptConnections()
-	{
-		while (run)
-		{
-			try
-			{
-				Socket client = listenerSocket.accept();
-				if (client != null)
-				{
-					clientHolder.add(new TelnetListener(client, this));
-					System.out.print("[MCTelnet] - Client connected: " + client.getInetAddress().toString());
-				}
-				for (int i = 0; i < clientHolder.size(); i++)
-				{
-					TelnetListener thisListener = clientHolder.get(i);
-					if (thisListener.isAlive() == false)
-					{
-						clientHolder.remove(i);
-					}
-				}
-			}
-			catch (IOException ex)
-			{
-				run = false;
-			}
-		}
-		Logger.getLogger("Minecraft").log(Level.INFO, "[MCTelnet] - Shutting Down!");
-		for (int i = 0; i < clientHolder.size(); i++)
-		{
-			TelnetListener temp = clientHolder.get(i);
-			temp.killClient();
-		}
-		listenerSocket = null;
-		clientHolder.clear();
-		clientHolder = null;
-		this.setEnabled(false);
-	}
+            listenerThread = new Thread(new Runnable()
+            {
+                public void run()
+                {
+                    acceptConnections();
+                }
+            });
+            listenerThread.start();
+        }
+        catch (Throwable ex)
+        {
+            log.log(Level.SEVERE, "[" + getDescription().getName() + "]: Error starting plugin!", ex);
+        }
+    }
+    
+    @Override
+    public void onDisable()
+    {
+        is_running = false;
+        
+        log.log(Level.INFO, "[" + getDescription().getName() + "]: Stopping server.");
+        
+        try
+        {
+            Thread.sleep(250);
+        }
+        catch (Throwable ex)
+        {
+        }
+        
+        if (clientHolder != null)
+        {
+            try
+            {
+                for (TelnetListener listener : clientHolder)
+                {
+                    listener.killClient();
+                }
+                clientHolder.clear();
+                clientHolder = null;
+            }
+            catch (Throwable ex)
+            {
+            }
+        }
 
-	private void testConfig()
-	{
-		String testConfig = this.getConfiguration().getString("telnetPort", null);
-		if (testConfig == null || testConfig.equals(""))
-		{
-			this.getConfiguration().setProperty("telnetPort", 8765);
-			this.getConfiguration().save();
-		}
-		testConfig = this.getConfiguration().getString("listenAddress", null);
-		if (testConfig == null || testConfig.equals(""))
-		{
-			this.getConfiguration().setProperty("listenAddress", "0.0.0.0");
-			this.getConfiguration().save();
-		}
-		testConfig = this.getConfiguration().getString("encryptPasswords", null);
-		if (testConfig == null || testConfig.equals(""))
-		{
-			this.getConfiguration().setProperty("encryptPasswords", true);
-			this.getConfiguration().save();
-		}
+        if (listenerSocket != null)
+        {
+            try
+            {
+                synchronized (listenerSocket)
+                {
+                    if (listenerSocket != null)
+                    {
+                        listenerSocket.close();
+                    }
+                }
+                listenerSocket = null;
+            }
+            catch (Throwable ex)
+            {
+            }
+        }
+        
+        try
+        {
+            Thread.sleep(250);
+        }
+        catch (Throwable ex)
+        {
+            log.log(Level.SEVERE, null, ex);
+        }
+    }
+    
+    private void acceptConnections()
+    {
+        while (is_running)
+        {
+            Socket client = null;
+            try
+            {
+                client = listenerSocket.accept();
+                if (client != null)
+                {
+                    clientHolder.add(new TelnetListener(client, this));
 
-	}
+                    log.info("[" + getDescription().getName() + "]: Client connected: " + client.getInetAddress().getHostAddress());
 
-	@Override
-	public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args)
-	{
-		if (this.isEnabled())
-		{
-			if (cmd.getName().equals("telnetreload"))
-			{
-				if (sender instanceof ConsoleCommandSender)
-				{
-					this.getConfiguration().load();
-					testConfig();
-					if (this.getConfiguration().getBoolean("encryptPasswords", false))
-					{
-						encryptPasswords();
-					}
-					sender.sendMessage("[MCTelnet] - Reloaded Config...");
-					for (int i = 0; i < clientHolder.size(); i++)
-					{
-						TelnetListener thisListener = clientHolder.get(i);
-						thisListener.sendMessage("[MCTelnet] - Telnet Restarting...");
-						thisListener.killClient();
-					}
-				}
-				return true;
-			}
-		}
-		return super.onCommand(sender, cmd, commandLabel, args);
-	}
+                    Iterator<TelnetListener> listeners = clientHolder.iterator();
+                    while (listeners.hasNext())
+                    {
+                        TelnetListener listener = listeners.next();
+                        if (!listener.isAlive())
+                        {
+                            listeners.remove();
+                        }
+                    }
+                }
+            }
+            catch (IOException ex)
+            {
+                is_running = false;
+            }
+        }
+        
+        this.setEnabled(false);
+    }
 }

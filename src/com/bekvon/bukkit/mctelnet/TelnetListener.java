@@ -11,7 +11,6 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
-import net.minecraft.server.MinecraftServer;
 import org.bukkit.ChatColor;
 import org.bukkit.Server;
 import org.bukkit.command.CommandSender;
@@ -19,371 +18,349 @@ import org.bukkit.permissions.Permission;
 import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.permissions.PermissionAttachmentInfo;
 import org.bukkit.plugin.Plugin;
-import org.bukkit.util.config.ConfigurationNode;
 
 public class TelnetListener extends Handler implements CommandSender
 {
-	private boolean run;
-	private boolean isAuth;
-	private String authUser;
-	private Thread listenThread;
-	Socket clientSocket;
-	MinecraftServer mcserv;
-	BufferedReader instream;
-	BufferedWriter outstream;
-	MCTelnet parent;
-	String ip;
-	String passRegex = "[^a-zA-Z0-9\\-\\.\\_]";
-    String commandRegex = "[^\\x20-\\x7E§]";
+    private static final Logger log = Logger.getLogger("Minecraft");
+    private boolean is_running = false;
+    private boolean is_authenticated = false;
+    private boolean already_stopped = false;
+    private String telnet_username = null;
+    private Thread listenThread;
+    private Socket clientSocket;
+    private BufferedReader instream;
+    private BufferedWriter outstream;
+    private MCTelnet plugin;
+    private String client_ip;
+    private static final String COMMAND_REGEX = "[^\\x20-\\x7E]";
+    private static final String LOGIN_REGEX = "[^a-zA-Z0-9\\-\\.\\_]";
+    
+    public TelnetListener(Socket socket, MCTelnet plugin)
+    {
+        this.is_running = true;
+        this.clientSocket = socket;
+        this.plugin = plugin;
+        if (clientSocket.getInetAddress() != null)
+        {
+            this.client_ip = clientSocket.getInetAddress().getHostAddress();
+        }
+        
+        startListener();
+    }
+    
+    private void startListener()
+    {
+        listenThread = new Thread(new Runnable()
+        {
+            public void run()
+            {
+                init();
+            }
+        });
+        listenThread.start();
+    }
+    
+    private void init()
+    {
+        try
+        {
+            instream = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            outstream = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
+        }
+        catch (Throwable ex)
+        {
+            is_running = false;
+            return;
+        }
+        
+        //sendTelnetCommand(WILL, LINEMODE);
+        //sendTelnetCommand(DO, LINEMODE);
+        //sendTelnetCommand(WONT, ECHO);
+        //sendTelnetCommand(DO, ECHO);
+        
+        writeOut("[MCTelnet] - Session Started!\r\n");
+        
+        authenticateLoop();
+        commandLoop();
+        shutdown();
+    }
+    
+    private void authenticateLoop()
+    {
+        int tries = 0;
+        
+        while (is_running && clientSocket.isConnected() && !is_authenticated)
+        {
+            try
+            {
+                //Get Username:
+                writeOut("Username: ");
+                String username = instream.readLine().replaceAll(LOGIN_REGEX, "").trim();
+                
+                //sendTelnetCommand(WILL, ECHO);
+                //sendTelnetCommand(DONT, ECHO);
 
-	public TelnetListener(Socket inSock, MCTelnet iparent)
-	{
-		run = true;
-		clientSocket = inSock;
-		parent = iparent;
-		passRegex = parent.getConfiguration().getString("passwordRegex", passRegex);
-		//commandRegex = parent.getConfiguration().getString("commandRegex", commandRegex);
-		ip = clientSocket.getInetAddress().toString();
-		listenThread = new Thread(new Runnable()
-		{
-			public void run()
-			{
-				mainLoop();
-			}
-		});
-		listenThread.start();
-	}
-
-	private void mainLoop()
-	{
-		try
-		{
-			instream = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-			outstream = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
-			//sendTelnetCommand(251,3);
-			//sendTelnetCommand(253,3);
-			sendTelnetCommand(251, 34);
-			sendTelnetCommand(253, 34);
-			sendTelnetCommand(252, 1);
-			sendTelnetCommand(253, 1);
-			outstream.write("[MCTelnet] - Session Started!\r\n");
-			outstream.flush();
-		}
-		catch (IOException ex)
-		{
-			Logger.getLogger("Minecraft").log(Level.SEVERE, null, ex);
-			run = false;
-		}
-		if (!clientSocket.getInetAddress().isLoopbackAddress() || !parent.getConfiguration().getBoolean("allowAuthlessLocalhost", false))
-		{
-			authenticateLoop();
-		}
-		else
-		{
-			isAuth = true;
-			authUser = parent.getConfiguration().getString("rootUser");
-		}
-		commandLoop();
-		shutdown();
-	}
-
-	private void authenticateLoop()
-	{
-		int retrys = 0;
-		while (run && clientSocket.isConnected() && isAuth == false)
-		{
-			try
-			{
-				outstream.write("Username:");
-				outstream.flush();
-				String username = instream.readLine().replaceAll(passRegex, "");
-				sendTelnetCommand(251, 1);
-				sendTelnetCommand(254, 1);
-				outstream.write("Password:");
-				outstream.flush();
-				String pw = instream.readLine().replaceAll(passRegex, "");
-				outstream.write("\r\n");
-				sendTelnetCommand(252, 1);
-				sendTelnetCommand(253, 1);
-				ConfigurationNode parentnode = parent.getConfiguration().getNode("users");
-				if (parentnode != null)
-				{
-					ConfigurationNode usernode = parentnode.getNode(username);
-					if (usernode != null)
-					{
-						String userpw = usernode.getString("password");
-						if (usernode.getBoolean("passEncrypted", false))
-						{
-							pw = MCTelnet.hashPassword(pw);
-						}
-						if (pw.equals(userpw))
-						{
-							authUser = username;
-							isAuth = true;
-						}
-					}
-				}
-				if (isAuth)
-				{
-					outstream.write("Logged In as " + authUser + "!\r\n:");
-					outstream.flush();
-				}
-				else
-				{
-					Thread.sleep(2000);
-					outstream.write("Invalid Username or Password!\r\n\r\n");
-					outstream.flush();
-				}
-				retrys++;
-				if (retrys == 3 && isAuth == false)
-				{
-					try
-					{
-						outstream.write("Too many failed login attempts!");
-						outstream.flush();
-					}
-					catch (Exception ex)
-					{
-					}
-					return;
-				}
-			}
-			catch (Exception ex)
-			{
-				run = false;
-				authUser = null;
-				isAuth = false;
-			}
-		}
-	}
-
-	private void commandLoop()
-	{
-		try
-		{
-			if (isAuth)
-			{
-				String[] validCommands = new String[0];
-
-				Logger.getLogger("Minecraft").addHandler(this);
-
-				while (run && clientSocket.isConnected() && isAuth)
-				{
-					String command = "";
-					command = instream.readLine().replaceAll(commandRegex, "").trim();
-					if (command.equals("exit"))
-					{
-						run = false;
-						clientSocket.close();
-						return;
-					}
-					if (!clientSocket.isClosed())
-					{
-						parent.getServer().dispatchCommand(this, command);
-						System.out.println("[MCTelnet] " + authUser + " issued command: " + command);
-					}
-				}
-			}
-		}
-		catch (Exception ex)
-		{
-		}
-	}
-
-	public boolean isAlive()
-	{
-		return run;
-	}
-
-	public void killClient()
-	{
-		try
-		{
-			run = false;
-			outstream.write("[MCTelnet] - Closing Connection!");
-			clientSocket.close();
-		}
-		catch (IOException ex)
-		{
-		}
-	}
-
-	private void shutdown()
-	{
-		try
-		{
-			run = false;
-			Logger.getLogger("Minecraft").removeHandler(this);
-			Logger.getLogger("Minecraft").log(Level.INFO, "[MCTelnet] Closing connection: " + ip);
-			if (!clientSocket.isClosed())
-			{
-				outstream.write("[MCTelnet] - Closing Connection!");
-				clientSocket.close();
-			}
-			mcserv = null;
-			parent = null;
-		}
-		catch (Exception ex)
-		{
-			Logger.getLogger("Minecraft").log(Level.SEVERE, null, ex);
-			run = false;
-		}
-	}
-
-	@Override
-	public void publish(LogRecord record)
-	{
-		try
-		{
-			if (!clientSocket.isClosed())
-			{
-				outstream.write(ChatColor.stripColor(record.getMessage()) + "\r\n:");
-				outstream.flush();
-			}
-		}
-		catch (IOException ex)
-		{
-		}
-	}
-
-	@Override
-	public void flush()
-	{
-		if (clientSocket.isConnected())
-		{
-			try
-			{
-				outstream.flush();
-			}
-			catch (IOException ex)
-			{
-			}
-		}
-	}
-
-	public void sendMessage(String string)
-	{
-		if (clientSocket.isConnected())
-		{
-			try
-			{
-				string = ChatColor.stripColor(string);
-				outstream.write(string + "\r\n:");
-				outstream.flush();
-			}
-			catch (IOException ex)
-			{
-			}
-		}
-	}
-
-	public boolean isOp()
-	{
-		if (authUser.equalsIgnoreCase("console"))
-		{
-			return true;
-		}
-		if (parent.getConfiguration().getBoolean("allowOPsAll", false))
-		{
-			return parent.getServer().getPlayer(authUser).isOp();
-		}
-		return false;
-	}
-
-	public boolean isPlayer()
-	{
-		return false;
-	}
-
-	public Server getServer()
-	{
-		return parent.getServer();
-	}
-
-	@Override
-	public void close() throws SecurityException
-	{
-		shutdown();
-	}
-
-	private void sendTelnetCommand(int command, int option)
-	{
-		if (clientSocket.isConnected())
-		{
-			try
-			{
-				String tcmd = ("" + ((char) 255) + ((char) command) + ((char) option));
-				outstream.write(tcmd);
-				outstream.flush();
-			}
-			catch (IOException ex)
-			{
-			}
-		}
-	}
-
-	public String getName()
-	{
-		return authUser;
-	}
-
-	public boolean isPermissionSet(String string)
-	{
-		return true;
-	}
-
-	public boolean isPermissionSet(Permission prmsn)
-	{
-		return true;
-	}
-
-	public boolean hasPermission(String string)
-	{
-		return true;
-	}
-
-	public boolean hasPermission(Permission prmsn)
-	{
-		return true;
-	}
-
-	public PermissionAttachment addAttachment(Plugin plugin, String string, boolean bln)
-	{
-		return null;
-	}
-
-	public PermissionAttachment addAttachment(Plugin plugin)
-	{
-		return null;
-	}
-
-	public PermissionAttachment addAttachment(Plugin plugin, String string, boolean bln, int i)
-	{
-		return null;
-	}
-
-	public PermissionAttachment addAttachment(Plugin plugin, int i)
-	{
-		return null;
-	}
-
-	public void removeAttachment(PermissionAttachment pa)
-	{
-		return;
-	}
-
-	public void recalculatePermissions()
-	{
-		return;
-	}
-
-	public Set<PermissionAttachmentInfo> getEffectivePermissions()
-	{
-		return null;
-	}
-
-	public void setOp(boolean bln)
-	{
-		return;
-	}
+                //Get Password:
+                writeOut("Password: ");
+                String password = instream.readLine().replaceAll(LOGIN_REGEX, "").trim();
+                writeOut("\r\n");
+                
+                //sendTelnetCommand(WONT, ECHO);
+                //sendTelnetCommand(DO, ECHO);
+                
+                if (password.equals(plugin.password))
+                {
+                    telnet_username = username;
+                    is_authenticated = true;
+                }
+                
+                if (is_authenticated)
+                {
+                    writeOut("Logged In as " + getName() + ".\r\n:");
+                    return;
+                }
+                else
+                {
+                    try
+                    {
+                        Thread.sleep(2000);
+                    }
+                    catch (InterruptedException ex)
+                    {
+                    }
+                    writeOut("Invalid Username or Password.\r\n\r\n");
+                }
+                
+                if (++tries >= 3)
+                {
+                    writeOut("Too many failed login attempts.\r\n");
+                    return;
+                }
+            }
+            catch (Throwable ex)
+            {
+                is_running = false;
+                telnet_username = null;
+                is_authenticated = false;
+            }
+        }
+    }
+    
+    private void commandLoop()
+    {
+        if (!is_running || !is_authenticated)
+        {
+            return;
+        }
+        
+        Logger.getLogger("Minecraft").addHandler(this);
+        
+        while (is_running && clientSocket.isConnected() && is_authenticated)
+        {
+            String command = null;
+            try
+            {
+                command = instream.readLine();
+            }
+            catch (IOException ex)
+            {
+            }
+            
+            if (command != null)
+            {
+                if (!command.isEmpty())
+                {
+                    command = command.replaceAll(COMMAND_REGEX, "").trim();
+                    plugin.getServer().dispatchCommand(this, command);
+                    log.log(Level.INFO, "[" + plugin.getDescription().getName() + "]: " + getName() + " issued command: " + command);
+                }
+                else
+                {
+                    writeOut(":");
+                }
+            }
+        }
+    }
+    
+    private void shutdown()
+    {
+        if (already_stopped)
+        {
+            return;
+        }
+        already_stopped = true;
+        
+        is_running = false;
+        
+        log.log(Level.INFO, "[" + plugin.getDescription().getName() + "]: Closing connection: " + client_ip);
+        Logger.getLogger("Minecraft").removeHandler(this);
+        
+        if (!clientSocket.isClosed())
+        {
+            writeOut("[" + plugin.getDescription().getName() + "]: Closing connection.");
+            try
+            {
+                clientSocket.close();
+            }
+            catch (IOException ex)
+            {
+            }
+        }
+    }
+    
+//    public static final int WILL = 251; //Sender wants to do something.
+//    public static final int WONT = 252; //Sender doesn't want to do something.
+//    public static final int DO = 253; //Sender wants the other end to do something.
+//    public static final int DONT = 254; //Sender wants the other not to do something.
+//    
+//    public static final int ECHO = 1;
+//    public static final int LINEMODE = 34;
+//    
+//    private void sendTelnetCommand(int command, int option)
+//    {
+//        writeOut(("" + ((char) 255) + ((char) command) + ((char) option)));
+//    }
+    
+    private void writeOut(String message)
+    {
+        if (outstream != null)
+        {
+            if (clientSocket.isConnected())
+            {
+                try
+                {
+                    outstream.write(message);
+                    outstream.flush();
+                }
+                catch (IOException ex)
+                {
+                    is_running = false;
+                }
+            }
+        }
+    }
+    
+    public boolean isAlive()
+    {
+        return is_running;
+    }
+    
+    public void killClient()
+    {
+        shutdown();
+    }
+    
+    @Override
+    public void publish(LogRecord record)
+    {
+        writeOut(ChatColor.stripColor(record.getMessage()) + "\r\n:");
+    }
+    
+    @Override
+    public void flush()
+    {
+        if (clientSocket.isConnected())
+        {
+            try
+            {
+                outstream.flush();
+            }
+            catch (IOException ex)
+            {
+            }
+        }
+    }
+    
+    @Override
+    public void close() throws SecurityException
+    {
+        shutdown();
+    }
+    
+    public void sendMessage(String string)
+    {
+        writeOut(ChatColor.stripColor(string) + "\r\n:");
+    }
+    
+    public Server getServer()
+    {
+        return plugin.getServer();
+    }
+    
+    public String getName()
+    {
+        if (telnet_username != null)
+        {
+            return telnet_username;
+        }
+        else
+        {
+            return plugin.getDescription().getName();
+        }
+    }
+    
+    public boolean isPermissionSet(String string)
+    {
+        return true;
+    }
+    
+    public boolean isPermissionSet(Permission prmsn)
+    {
+        return true;
+    }
+    
+    public boolean hasPermission(String string)
+    {
+        return true;
+    }
+    
+    public boolean hasPermission(Permission prmsn)
+    {
+        return true;
+    }
+    
+    public PermissionAttachment addAttachment(Plugin plugin, String string, boolean bln)
+    {
+        return null;
+    }
+    
+    public PermissionAttachment addAttachment(Plugin plugin)
+    {
+        return null;
+    }
+    
+    public PermissionAttachment addAttachment(Plugin plugin, String string, boolean bln, int i)
+    {
+        return null;
+    }
+    
+    public PermissionAttachment addAttachment(Plugin plugin, int i)
+    {
+        return null;
+    }
+    
+    public void removeAttachment(PermissionAttachment pa)
+    {
+        return;
+    }
+    
+    public void recalculatePermissions()
+    {
+        return;
+    }
+    
+    public Set<PermissionAttachmentInfo> getEffectivePermissions()
+    {
+        return null;
+    }
+    
+    public boolean isOp()
+    {
+        return true;
+    }
+    
+    public void setOp(boolean bln)
+    {
+        return;
+    }
 }
