@@ -32,9 +32,10 @@ public class TelnetListener extends Handler implements CommandSender
     private BufferedWriter outstream;
     private MCTelnet plugin;
     private String client_ip;
+    private boolean show_full_log = true;
     private static final String COMMAND_REGEX = "[^\\x20-\\x7E]";
     private static final String LOGIN_REGEX = "[^a-zA-Z0-9\\-\\.\\_]";
-    
+
     public TelnetListener(Socket socket, MCTelnet plugin)
     {
         this.is_running = true;
@@ -44,10 +45,10 @@ public class TelnetListener extends Handler implements CommandSender
         {
             this.client_ip = clientSocket.getInetAddress().getHostAddress();
         }
-        
+
         startListener();
     }
-    
+
     private void startListener()
     {
         listenThread = new Thread(new Runnable()
@@ -59,7 +60,7 @@ public class TelnetListener extends Handler implements CommandSender
         });
         listenThread.start();
     }
-    
+
     private void init()
     {
         try
@@ -72,23 +73,23 @@ public class TelnetListener extends Handler implements CommandSender
             is_running = false;
             return;
         }
-        
+
         //sendTelnetCommand(WILL, LINEMODE);
         //sendTelnetCommand(DO, LINEMODE);
         //sendTelnetCommand(WONT, ECHO);
         //sendTelnetCommand(DO, ECHO);
-        
+
         writeOut("[MCTelnet] - Session Started!\r\n");
-        
+
         authenticateLoop();
         commandLoop();
         shutdown();
     }
-    
+
     private void authenticateLoop()
     {
         int tries = 0;
-        
+
         while (is_running && clientSocket.isConnected() && !is_authenticated)
         {
             try
@@ -96,26 +97,34 @@ public class TelnetListener extends Handler implements CommandSender
                 //Get Username:
                 writeOut("Username: ");
                 String username = instream.readLine().replaceAll(LOGIN_REGEX, "").trim();
-                
-                //sendTelnetCommand(WILL, ECHO);
-                //sendTelnetCommand(DONT, ECHO);
 
-                //Get Password:
-                writeOut("Password: ");
-                String password = instream.readLine().replaceAll(LOGIN_REGEX, "").trim();
-                writeOut("\r\n");
-                
-                //sendTelnetCommand(WONT, ECHO);
-                //sendTelnetCommand(DO, ECHO);
-                
-                if (password.equals(plugin.password))
+                if (TelnetUtil.canBypassPassword(client_ip, plugin))
                 {
-                    telnet_username = username;
+                    writeOut("Skipping password, you are on an authorized IP address.\r\n");
                     is_authenticated = true;
                 }
-                
+                else
+                {
+                    //sendTelnetCommand(WILL, ECHO);
+                    //sendTelnetCommand(DONT, ECHO);
+
+                    //Get Password:
+                    writeOut("Password: ");
+                    String password = instream.readLine().replaceAll(LOGIN_REGEX, "").trim();
+                    writeOut("\r\n");
+
+                    //sendTelnetCommand(WONT, ECHO);
+                    //sendTelnetCommand(DO, ECHO);
+
+                    if (password.equals(plugin.password))
+                    {
+                        is_authenticated = true;
+                    }
+                }
+
                 if (is_authenticated)
                 {
+                    telnet_username = username;
                     writeOut("Logged In as " + getName() + ".\r\n:");
                     return;
                 }
@@ -130,7 +139,7 @@ public class TelnetListener extends Handler implements CommandSender
                     }
                     writeOut("Invalid Username or Password.\r\n\r\n");
                 }
-                
+
                 if (++tries >= 3)
                 {
                     writeOut("Too many failed login attempts.\r\n");
@@ -145,16 +154,16 @@ public class TelnetListener extends Handler implements CommandSender
             }
         }
     }
-    
+
     private void commandLoop()
     {
         if (!is_running || !is_authenticated)
         {
             return;
         }
-        
+
         Logger.getLogger("Minecraft").addHandler(this);
-        
+
         while (is_running && clientSocket.isConnected() && is_authenticated)
         {
             String command = null;
@@ -165,14 +174,32 @@ public class TelnetListener extends Handler implements CommandSender
             catch (IOException ex)
             {
             }
-            
+
             if (command != null)
             {
+                command = command.replaceAll(COMMAND_REGEX, "").trim();
+
                 if (!command.isEmpty())
                 {
-                    command = command.replaceAll(COMMAND_REGEX, "").trim();
-                    plugin.getServer().dispatchCommand(this, command);
-                    log.log(Level.INFO, "[" + plugin.getDescription().getName() + "]: " + getName() + " issued command: " + command);
+                    if (command.toLowerCase().startsWith("telnet"))
+                    {
+                        if (command.equalsIgnoreCase("telnet.log"))
+                        {
+                            show_full_log = !show_full_log;
+                            if (show_full_log)
+                            {
+                                writeOut("Showing full console log.\r\n:");
+                            }
+                            else
+                            {
+                                writeOut("Showing chat log only.\r\n:");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        plugin.getServer().dispatchCommand(this, command);
+                    }
                 }
                 else
                 {
@@ -181,7 +208,7 @@ public class TelnetListener extends Handler implements CommandSender
             }
         }
     }
-    
+
     private void shutdown()
     {
         if (already_stopped)
@@ -189,12 +216,12 @@ public class TelnetListener extends Handler implements CommandSender
             return;
         }
         already_stopped = true;
-        
+
         is_running = false;
-        
+
         log.log(Level.INFO, "[" + plugin.getDescription().getName() + "]: Closing connection: " + client_ip);
         Logger.getLogger("Minecraft").removeHandler(this);
-        
+
         if (!clientSocket.isClosed())
         {
             writeOut("[" + plugin.getDescription().getName() + "]: Closing connection.");
@@ -207,7 +234,7 @@ public class TelnetListener extends Handler implements CommandSender
             }
         }
     }
-    
+
 //    public static final int WILL = 251; //Sender wants to do something.
 //    public static final int WONT = 252; //Sender doesn't want to do something.
 //    public static final int DO = 253; //Sender wants the other end to do something.
@@ -239,23 +266,28 @@ public class TelnetListener extends Handler implements CommandSender
             }
         }
     }
-    
+
     public boolean isAlive()
     {
         return is_running;
     }
-    
+
     public void killClient()
     {
         shutdown();
     }
-    
+
     @Override
     public void publish(LogRecord record)
     {
-        writeOut(ChatColor.stripColor(record.getMessage()) + "\r\n:");
+        String message = ChatColor.stripColor(record.getMessage());
+        
+        if (show_full_log || message.startsWith("<") || message.startsWith("[Server:") || message.startsWith("[CONSOLE]<"))
+        {
+            writeOut(message + "\r\n:");
+        }
     }
-    
+
     @Override
     public void flush()
     {
@@ -270,23 +302,23 @@ public class TelnetListener extends Handler implements CommandSender
             }
         }
     }
-    
+
     @Override
     public void close() throws SecurityException
     {
         shutdown();
     }
-    
+
     public void sendMessage(String string)
     {
         writeOut(ChatColor.stripColor(string) + "\r\n:");
     }
-    
+
     public Server getServer()
     {
         return plugin.getServer();
     }
-    
+
     public String getName()
     {
         if (telnet_username != null)
@@ -298,67 +330,67 @@ public class TelnetListener extends Handler implements CommandSender
             return plugin.getDescription().getName();
         }
     }
-    
+
     public boolean isPermissionSet(String string)
     {
         return true;
     }
-    
+
     public boolean isPermissionSet(Permission prmsn)
     {
         return true;
     }
-    
+
     public boolean hasPermission(String string)
     {
         return true;
     }
-    
+
     public boolean hasPermission(Permission prmsn)
     {
         return true;
     }
-    
+
     public PermissionAttachment addAttachment(Plugin plugin, String string, boolean bln)
     {
         return null;
     }
-    
+
     public PermissionAttachment addAttachment(Plugin plugin)
     {
         return null;
     }
-    
+
     public PermissionAttachment addAttachment(Plugin plugin, String string, boolean bln, int i)
     {
         return null;
     }
-    
+
     public PermissionAttachment addAttachment(Plugin plugin, int i)
     {
         return null;
     }
-    
+
     public void removeAttachment(PermissionAttachment pa)
     {
         return;
     }
-    
+
     public void recalculatePermissions()
     {
         return;
     }
-    
+
     public Set<PermissionAttachmentInfo> getEffectivePermissions()
     {
         return null;
     }
-    
+
     public boolean isOp()
     {
         return true;
     }
-    
+
     public void setOp(boolean bln)
     {
         return;

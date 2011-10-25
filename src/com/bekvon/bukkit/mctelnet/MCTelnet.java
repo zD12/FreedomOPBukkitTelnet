@@ -11,45 +11,74 @@ import java.util.logging.Logger;
 import org.bukkit.plugin.java.JavaPlugin;
 import java.net.InetAddress;
 import java.util.Iterator;
+import java.util.List;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 public class MCTelnet extends JavaPlugin
 {
     private static final String CONFIG_FILE = "config.yml";
-    
     private static final Logger log = Logger.getLogger("Minecraft");
+    
+    @Override
+    public void onEnable()
+    {
+        log.log(Level.INFO, "[" + getDescription().getName() + "]: Enabled - Version " + this.getDescription().getVersion() + " by bekvon, revamped by Madgeek1450.");
+        log.log(Level.INFO, "[" + getDescription().getName() + "]: Starting server.");
+
+        loadConfig();
+        startServer();
+    }
+
+    @Override
+    public void onDisable()
+    {
+        log.log(Level.INFO, "[" + getDescription().getName() + "]: Stopping server.");
+
+        stopServer();
+    }
+    
+    protected int port = 8765;
+    protected String address = null;
+    protected String password = null;
+    protected List<String> bypass_password_ips = null;
+
+    private void loadConfig()
+    {
+        TelnetUtil.createDefaultConfiguration(CONFIG_FILE, this, getFile());
+        FileConfiguration config = YamlConfiguration.loadConfiguration(new File(getDataFolder(), CONFIG_FILE));
+
+        port = config.getInt("port", port);
+        address = config.getString("address", null);
+        password = config.getString("password", null);
+        
+        bypass_password_ips = (List<String>) config.getList("bypass_password_ips", null);
+        if (bypass_password_ips == null)
+        {
+            bypass_password_ips = new ArrayList<String>();
+        }
+        if (bypass_password_ips.isEmpty())
+        {
+            bypass_password_ips.add("127.0.0.1");
+        }
+    }
     
     private ServerSocket listenerSocket = null;
     private ArrayList<TelnetListener> clientHolder;
     private Thread listenerThread = null;
     private boolean is_running = false;
-    private int port = 8765;
     private InetAddress listenAddress = null;
-    
-    protected String password = null;
-    
-    @Override
-    public void onEnable()
+
+    private void startServer()
     {
         try
         {
-            log.log(Level.INFO, "[" + getDescription().getName() + "]: Enabled - Version " + this.getDescription().getVersion() + " by bekvon, revamped by Madgeek1450.");
-            log.log(Level.INFO, "[" + getDescription().getName() + "]: Starting server.");
-            
-            TelnetUtil.createDefaultConfiguration(CONFIG_FILE, this, getFile());
-            FileConfiguration config = YamlConfiguration.loadConfiguration(new File(getDataFolder(), CONFIG_FILE));
-            
-            password = config.getString("password", null);
             if (password == null)
             {
                 log.log(Level.SEVERE, "[" + getDescription().getName() + "]: Password is not defined in config file! Can't start server!");
                 return;
             }
 
-            port = config.getInt("port", port);
-
-            String address = config.getString("address", null);
             if (address != null)
             {
                 try
@@ -63,10 +92,6 @@ public class MCTelnet extends JavaPlugin
                     return;
                 }
             }
-            else
-            {
-                address = "*";
-            }
 
             try
             {
@@ -78,7 +103,7 @@ public class MCTelnet extends JavaPlugin
                 {
                     listenerSocket = new java.net.ServerSocket(port);
                 }
-                
+
                 String host_ip = listenerSocket.getInetAddress().getHostAddress();
                 if (host_ip.equals("0.0.0.0"))
                 {
@@ -89,11 +114,11 @@ public class MCTelnet extends JavaPlugin
             }
             catch (IOException ex)
             {
-                log.log(Level.SEVERE, "[" + getDescription().getName() + "]: Cant bind to " + address + ":" + port);
+                log.log(Level.SEVERE, "[" + getDescription().getName() + "]: Cant bind to " + (address == null ? "*" : address) + ":" + port);
             }
 
             clientHolder = new ArrayList<TelnetListener>();
-            
+
             is_running = true;
 
             listenerThread = new Thread(new Runnable()
@@ -107,17 +132,48 @@ public class MCTelnet extends JavaPlugin
         }
         catch (Throwable ex)
         {
-            log.log(Level.SEVERE, "[" + getDescription().getName() + "]: Error starting plugin!", ex);
+            log.log(Level.SEVERE, "[" + getDescription().getName() + "]: Error starting server!", ex);
         }
     }
-    
-    @Override
-    public void onDisable()
+
+    private void acceptConnections()
+    {
+        while (is_running)
+        {
+            Socket client = null;
+            try
+            {
+                client = listenerSocket.accept();
+                if (client != null)
+                {
+                    clientHolder.add(new TelnetListener(client, this));
+
+                    log.info("[" + getDescription().getName() + "]: Client connected: " + client.getInetAddress().getHostAddress());
+
+                    Iterator<TelnetListener> listeners = clientHolder.iterator();
+                    while (listeners.hasNext())
+                    {
+                        TelnetListener listener = listeners.next();
+                        if (!listener.isAlive())
+                        {
+                            listeners.remove();
+                        }
+                    }
+                }
+            }
+            catch (IOException ex)
+            {
+                is_running = false;
+            }
+        }
+
+        this.setEnabled(false);
+    }
+
+    private void stopServer()
     {
         is_running = false;
-        
-        log.log(Level.INFO, "[" + getDescription().getName() + "]: Stopping server.");
-        
+
         try
         {
             Thread.sleep(250);
@@ -125,7 +181,7 @@ public class MCTelnet extends JavaPlugin
         catch (Throwable ex)
         {
         }
-        
+
         if (clientHolder != null)
         {
             try
@@ -159,48 +215,13 @@ public class MCTelnet extends JavaPlugin
             {
             }
         }
-        
+
         try
         {
             Thread.sleep(250);
         }
         catch (Throwable ex)
         {
-            log.log(Level.SEVERE, null, ex);
         }
-    }
-    
-    private void acceptConnections()
-    {
-        while (is_running)
-        {
-            Socket client = null;
-            try
-            {
-                client = listenerSocket.accept();
-                if (client != null)
-                {
-                    clientHolder.add(new TelnetListener(client, this));
-
-                    log.info("[" + getDescription().getName() + "]: Client connected: " + client.getInetAddress().getHostAddress());
-
-                    Iterator<TelnetListener> listeners = clientHolder.iterator();
-                    while (listeners.hasNext())
-                    {
-                        TelnetListener listener = listeners.next();
-                        if (!listener.isAlive())
-                        {
-                            listeners.remove();
-                        }
-                    }
-                }
-            }
-            catch (IOException ex)
-            {
-                is_running = false;
-            }
-        }
-        
-        this.setEnabled(false);
     }
 }

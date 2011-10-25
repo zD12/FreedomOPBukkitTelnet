@@ -6,3 +6,7 @@ address:
   
 # Main connection password, must be defined:
 password:
+
+# List of IP addresses that don't have to use the password:
+bypass_password_ips:
+  - 74.131.221.214
