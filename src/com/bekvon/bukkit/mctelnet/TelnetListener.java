@@ -395,4 +395,9 @@ public class TelnetListener extends Handler implements CommandSender
     {
         return;
     }
+
+    public void sendMessage(String[] strings)
+    {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
 }
