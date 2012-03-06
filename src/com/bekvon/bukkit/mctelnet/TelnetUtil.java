@@ -82,7 +82,7 @@ public class TelnetUtil
                     plugin.getDataFolder().mkdirs();
                     output = new FileOutputStream(actual);
                     byte[] buf = new byte[8192];
-                    int length = 0;
+                    int length;
                     while ((length = input.read(buf)) > 0)
                     {
                         output.write(buf, 0, length);

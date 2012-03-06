@@ -1,10 +1,6 @@
 package com.bekvon.bukkit.mctelnet;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
+import java.io.*;
 import java.net.Socket;
 import java.util.Set;
 import java.util.logging.Handler;
@@ -314,6 +310,14 @@ public class TelnetListener extends Handler implements CommandSender
         writeOut(ChatColor.stripColor(string) + "\r\n:");
     }
 
+    public void sendMessage(String[] strings)
+    {
+        for (String string : strings)
+        {
+            sendMessage(string);
+        }
+    }
+
     public Server getServer()
     {
         return plugin.getServer();
@@ -373,12 +377,10 @@ public class TelnetListener extends Handler implements CommandSender
 
     public void removeAttachment(PermissionAttachment pa)
     {
-        return;
     }
 
     public void recalculatePermissions()
     {
-        return;
     }
 
     public Set<PermissionAttachmentInfo> getEffectivePermissions()
@@ -393,11 +395,5 @@ public class TelnetListener extends Handler implements CommandSender
 
     public void setOp(boolean bln)
     {
-        return;
-    }
-
-    public void sendMessage(String[] strings)
-    {
-        throw new UnsupportedOperationException("Not supported yet.");
     }
 }
