@@ -1,4 +1,4 @@
-package com.bekvon.bukkit.mctelnet;
+package me.StevenLawson.BukkitTelnet.BukkitTelnet;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,7 +15,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
-public class MCTelnet extends JavaPlugin
+public class BukkitTelnet extends JavaPlugin
 {
     private static final String CONFIG_FILE = "config.yml";
     private static final Logger log = Logger.getLogger("Minecraft");
@@ -23,7 +23,7 @@ public class MCTelnet extends JavaPlugin
     @Override
     public void onEnable()
     {
-        log.log(Level.INFO, "[" + getDescription().getName() + "]: Enabled - Version " + this.getDescription().getVersion() + " by bekvon, revamped by Madgeek1450.");
+        log.log(Level.INFO, "[" + getDescription().getName() + "]: Enabled - Version " + this.getDescription().getVersion() + " by bekvon / Madgeek1450.");
         log.log(Level.INFO, "[" + getDescription().getName() + "]: Starting server.");
 
         loadConfig();
@@ -45,7 +45,7 @@ public class MCTelnet extends JavaPlugin
 
     private void loadConfig()
     {
-        TelnetUtil.createDefaultConfiguration(CONFIG_FILE, this, getFile());
+        BT_Util.createDefaultConfiguration(CONFIG_FILE, this, getFile());
         FileConfiguration config = YamlConfiguration.loadConfiguration(new File(getDataFolder(), CONFIG_FILE));
 
         port = config.getInt("port", port);
@@ -64,7 +64,7 @@ public class MCTelnet extends JavaPlugin
     }
     
     private ServerSocket listenerSocket = null;
-    private ArrayList<TelnetListener> clientHolder;
+    private ArrayList<BT_TelnetListener> clientHolder;
     private Thread listenerThread = null;
     private boolean is_running = false;
     private InetAddress listenAddress = null;
@@ -117,7 +117,7 @@ public class MCTelnet extends JavaPlugin
                 log.log(Level.SEVERE, "[" + getDescription().getName() + "]: Cant bind to " + (address == null ? "*" : address) + ":" + port);
             }
 
-            clientHolder = new ArrayList<TelnetListener>();
+            clientHolder = new ArrayList<BT_TelnetListener>();
 
             is_running = true;
 
@@ -146,14 +146,14 @@ public class MCTelnet extends JavaPlugin
                 client = listenerSocket.accept();
                 if (client != null)
                 {
-                    clientHolder.add(new TelnetListener(client, this));
+                    clientHolder.add(new BT_TelnetListener(client, this));
 
                     log.info("[" + getDescription().getName() + "]: Client connected: " + client.getInetAddress().getHostAddress());
 
-                    Iterator<TelnetListener> listeners = clientHolder.iterator();
+                    Iterator<BT_TelnetListener> listeners = clientHolder.iterator();
                     while (listeners.hasNext())
                     {
-                        TelnetListener listener = listeners.next();
+                        BT_TelnetListener listener = listeners.next();
                         if (!listener.isAlive())
                         {
                             listeners.remove();
@@ -186,7 +186,7 @@ public class MCTelnet extends JavaPlugin
         {
             try
             {
-                for (TelnetListener listener : clientHolder)
+                for (BT_TelnetListener listener : clientHolder)
                 {
                     listener.killClient();
                 }

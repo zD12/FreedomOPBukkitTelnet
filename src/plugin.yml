@@ -1,5 +1,5 @@
-name: MCTelnet
-main: com.bekvon.bukkit.mctelnet.MCTelnet
-version: 1.3
+name: BukkitTelnet
+main: me.StevenLawson.BukkitTelnet.BukkitTelnet
+version: 2.0
 description: Telnet console access plugin.
-author: bekvon
+author: bekvon, Madgeek1450 / StevenLawson

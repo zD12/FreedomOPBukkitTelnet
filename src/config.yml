@@ -1,3 +1,5 @@
+# BukkitTelnet v2.0 Configuration File
+
 # Port to bind to:
 port: 8765
 

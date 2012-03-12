@@ -1,4 +1,4 @@
-package com.bekvon.bukkit.mctelnet;
+package me.StevenLawson.BukkitTelnet.BukkitTelnet;
 
 import java.io.*;
 import java.net.Socket;
@@ -15,7 +15,7 @@ import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.permissions.PermissionAttachmentInfo;
 import org.bukkit.plugin.Plugin;
 
-public class TelnetListener extends Handler implements CommandSender
+public class BT_TelnetListener extends Handler implements CommandSender
 {
     private static final Logger log = Logger.getLogger("Minecraft");
     private boolean is_running = false;
@@ -26,13 +26,13 @@ public class TelnetListener extends Handler implements CommandSender
     private Socket clientSocket;
     private BufferedReader instream;
     private BufferedWriter outstream;
-    private MCTelnet plugin;
+    private BukkitTelnet plugin;
     private String client_ip;
     private boolean show_full_log = true;
     private static final String COMMAND_REGEX = "[^\\x20-\\x7E]";
     private static final String LOGIN_REGEX = "[^a-zA-Z0-9\\-\\.\\_]";
 
-    public TelnetListener(Socket socket, MCTelnet plugin)
+    public BT_TelnetListener(Socket socket, BukkitTelnet plugin)
     {
         this.is_running = true;
         this.clientSocket = socket;
@@ -75,7 +75,7 @@ public class TelnetListener extends Handler implements CommandSender
         //sendTelnetCommand(WONT, ECHO);
         //sendTelnetCommand(DO, ECHO);
 
-        writeOut("[MCTelnet] - Session Started!\r\n");
+        writeOut("[BukkitTelnet] - Session Started!\r\n");
 
         authenticateLoop();
         commandLoop();
@@ -94,7 +94,7 @@ public class TelnetListener extends Handler implements CommandSender
                 writeOut("Username: ");
                 String username = instream.readLine().replaceAll(LOGIN_REGEX, "").trim();
 
-                if (TelnetUtil.canBypassPassword(client_ip, plugin))
+                if (BT_Util.canBypassPassword(client_ip, plugin))
                 {
                     writeOut("Skipping password, you are on an authorized IP address.\r\n");
                     is_authenticated = true;
@@ -122,6 +122,7 @@ public class TelnetListener extends Handler implements CommandSender
                 {
                     telnet_username = username;
                     writeOut("Logged In as " + getName() + ".\r\n:");
+                    log.log(Level.INFO, "[" + plugin.getDescription().getName() + "]: " + client_ip + " logged in as \"" + getName() + "\".");
                     return;
                 }
                 else

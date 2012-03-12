@@ -1,4 +1,4 @@
-package com.bekvon.bukkit.mctelnet;
+package me.StevenLawson.BukkitTelnet.BukkitTelnet;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -9,15 +9,15 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 
-public class TelnetUtil
+public class BT_Util
 {
     private static final Logger log = Logger.getLogger("Minecraft");
 
-    private TelnetUtil()
+    protected BT_Util()
     {
     }
-    
-    public static boolean canBypassPassword(String user_ip, MCTelnet plugin)
+
+    public static boolean canBypassPassword(String user_ip, BukkitTelnet plugin)
     {
         if (plugin.bypass_password_ips == null)
         {
@@ -51,7 +51,7 @@ public class TelnetUtil
         return false;
     }
 
-    public static void createDefaultConfiguration(String name, MCTelnet plugin, File plugin_file)
+    public static void createDefaultConfiguration(String name, BukkitTelnet plugin, File plugin_file)
     {
         File actual = new File(plugin.getDataFolder(), name);
         if (!actual.exists())
