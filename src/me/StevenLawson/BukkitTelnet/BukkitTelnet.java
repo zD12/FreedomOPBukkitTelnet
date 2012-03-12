@@ -1,4 +1,4 @@
-package me.StevenLawson.BukkitTelnet.BukkitTelnet;
+package me.StevenLawson.BukkitTelnet;
 
 import java.io.File;
 import java.io.IOException;
