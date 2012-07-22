@@ -192,6 +192,10 @@ public class BT_TelnetListener extends Handler implements CommandSender
                                 writeOut("Showing chat log only.\r\n:");
                             }
                         }
+                        if (command.equalsIgnoreCase("telnet.exit"))
+                        {
+                            shutdown();
+                        }
                     }
                     else
                     {
