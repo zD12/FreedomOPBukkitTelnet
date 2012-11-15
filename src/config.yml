@@ -1,11 +1,11 @@
-# BukkitTelnet v2.0 Configuration File
+# BukkitTelnet v2.2 Configuration File
 
 # Port to bind to:
 port: 8765
 
 # Address to listen on, leave blank for all:
 address:
-  
+
 # Main connection password, must be defined:
 password:
 
