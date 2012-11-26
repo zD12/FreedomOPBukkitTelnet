@@ -21,7 +21,6 @@ public class BT_TelnetListener extends Handler implements CommandSender
     {
         FULL, NONCHAT_ONLY, CHAT_ONLY
     }
-    private static final Logger log = Logger.getLogger("Minecraft");
     private boolean is_running = false;
     private boolean is_authenticated = false;
     private boolean already_stopped = false;
@@ -53,6 +52,7 @@ public class BT_TelnetListener extends Handler implements CommandSender
     {
         listenThread = new Thread(new Runnable()
         {
+            @Override
             public void run()
             {
                 init();
@@ -98,7 +98,7 @@ public class BT_TelnetListener extends Handler implements CommandSender
                 writeOut("Username: ");
                 String username = instream.readLine().replaceAll(LOGIN_REGEX, "").trim();
 
-                if (BT_Util.canBypassPassword(client_ip, plugin))
+                if (BT_Util.canBypassPassword(client_ip))
                 {
                     writeOut("Skipping password, you are on an authorized IP address.\r\n");
                     is_authenticated = true;
@@ -126,7 +126,7 @@ public class BT_TelnetListener extends Handler implements CommandSender
                 {
                     telnet_username = username;
                     writeOut("Logged In as " + getName() + ".\r\n:");
-                    log.log(Level.INFO, "[" + plugin.getDescription().getName() + "]: " + client_ip + " logged in as \"" + getName() + "\".");
+                    BT_Util.log(Level.INFO, client_ip + " logged in as \"" + getName() + "\".");
                     return;
                 }
                 else
@@ -247,7 +247,7 @@ public class BT_TelnetListener extends Handler implements CommandSender
 
         is_running = false;
 
-        log.log(Level.INFO, "[" + plugin.getDescription().getName() + "]: Closing connection: " + client_ip);
+        BT_Util.log(Level.INFO, "Closing connection: " + client_ip);
         Logger.getLogger("Minecraft").removeHandler(this);
 
         if (!clientSocket.isClosed())
@@ -350,11 +350,13 @@ public class BT_TelnetListener extends Handler implements CommandSender
         shutdown();
     }
 
+    @Override
     public void sendMessage(String string)
     {
         writeOut(ChatColor.stripColor(string) + "\r\n:");
     }
 
+    @Override
     public void sendMessage(String[] strings)
     {
         for (String string : strings)
@@ -363,11 +365,13 @@ public class BT_TelnetListener extends Handler implements CommandSender
         }
     }
 
+    @Override
     public Server getServer()
     {
         return plugin.getServer();
     }
 
+    @Override
     public String getName()
     {
         if (telnet_username != null)
@@ -380,64 +384,77 @@ public class BT_TelnetListener extends Handler implements CommandSender
         }
     }
 
+    @Override
     public boolean isPermissionSet(String string)
     {
         return true;
     }
 
+    @Override
     public boolean isPermissionSet(Permission prmsn)
     {
         return true;
     }
 
+    @Override
     public boolean hasPermission(String string)
     {
         return true;
     }
 
+    @Override
     public boolean hasPermission(Permission prmsn)
     {
         return true;
     }
 
+    @Override
     public PermissionAttachment addAttachment(Plugin plugin, String string, boolean bln)
     {
         return null;
     }
 
+    @Override
     public PermissionAttachment addAttachment(Plugin plugin)
     {
         return null;
     }
 
+    @Override
     public PermissionAttachment addAttachment(Plugin plugin, String string, boolean bln, int i)
     {
         return null;
     }
 
+    @Override
     public PermissionAttachment addAttachment(Plugin plugin, int i)
     {
         return null;
     }
 
+    @Override
     public void removeAttachment(PermissionAttachment pa)
     {
     }
 
+    @Override
     public void recalculatePermissions()
     {
     }
 
+    @Override
     public Set<PermissionAttachmentInfo> getEffectivePermissions()
     {
         return null;
     }
 
+    @Override
     public boolean isOp()
     {
         return true;
     }
 
+    @Override
     public void setOp(boolean bln)
     {
     }

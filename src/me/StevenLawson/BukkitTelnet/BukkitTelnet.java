@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -18,13 +18,15 @@ import org.bukkit.plugin.java.JavaPlugin;
 public class BukkitTelnet extends JavaPlugin
 {
     private static final String CONFIG_FILE = "config.yml";
-    private static final Logger log = Logger.getLogger("Minecraft");
-    
+    public static BukkitTelnet plugin = null;
+
     @Override
     public void onEnable()
     {
-        log.log(Level.INFO, "[" + getDescription().getName() + "]: Enabled - Version " + this.getDescription().getVersion() + " by bekvon / Madgeek1450.");
-        log.log(Level.INFO, "[" + getDescription().getName() + "]: Starting server.");
+        BukkitTelnet.plugin = this;
+
+        BT_Util.log(Level.INFO, "Enabled - Version " + this.getDescription().getVersion() + " by bekvon / Madgeek1450.");
+        BT_Util.log(Level.INFO, "Starting server.");
 
         loadConfig();
         startServer();
@@ -33,11 +35,10 @@ public class BukkitTelnet extends JavaPlugin
     @Override
     public void onDisable()
     {
-        log.log(Level.INFO, "[" + getDescription().getName() + "]: Stopping server.");
+        BT_Util.log(Level.INFO, "Stopping server.");
 
         stopServer();
     }
-    
     protected int port = 8765;
     protected String address = null;
     protected String password = null;
@@ -45,13 +46,13 @@ public class BukkitTelnet extends JavaPlugin
 
     private void loadConfig()
     {
-        BT_Util.createDefaultConfiguration(CONFIG_FILE, this, getFile());
+        BT_Util.createDefaultConfiguration(CONFIG_FILE, getFile());
         FileConfiguration config = YamlConfiguration.loadConfiguration(new File(getDataFolder(), CONFIG_FILE));
 
         port = config.getInt("port", port);
         address = config.getString("address", null);
         password = config.getString("password", null);
-        
+
         bypass_password_ips = (List<String>) config.getList("bypass_password_ips", null);
         if (bypass_password_ips == null)
         {
@@ -62,7 +63,6 @@ public class BukkitTelnet extends JavaPlugin
             bypass_password_ips.add("127.0.0.1");
         }
     }
-    
     private ServerSocket listenerSocket = null;
     private ArrayList<BT_TelnetListener> clientHolder;
     private Thread listenerThread = null;
@@ -75,7 +75,7 @@ public class BukkitTelnet extends JavaPlugin
         {
             if (password == null)
             {
-                log.log(Level.SEVERE, "[" + getDescription().getName() + "]: Password is not defined in config file! Can't start server!");
+                BT_Util.log(Level.SEVERE, "Password is not defined in config file! Can't start server!");
                 return;
             }
 
@@ -88,7 +88,7 @@ public class BukkitTelnet extends JavaPlugin
                 }
                 catch (UnknownHostException ex)
                 {
-                    log.log(Level.SEVERE, "[" + getDescription().getName() + "]: Unknown host: " + address);
+                    BT_Util.log(Level.SEVERE, "Unknown host: " + address);
                     return;
                 }
             }
@@ -110,11 +110,11 @@ public class BukkitTelnet extends JavaPlugin
                     host_ip = "*";
                 }
 
-                log.log(Level.INFO, "[" + getDescription().getName() + "]: Server started on " + host_ip + ":" + port);
+                BT_Util.log(Level.INFO, "Server started on " + host_ip + ":" + port);
             }
             catch (IOException ex)
             {
-                log.log(Level.SEVERE, "[" + getDescription().getName() + "]: Cant bind to " + (address == null ? "*" : address) + ":" + port);
+                BT_Util.log(Level.SEVERE, "Cant bind to " + (address == null ? "*" : address) + ":" + port);
             }
 
             clientHolder = new ArrayList<BT_TelnetListener>();
@@ -123,6 +123,7 @@ public class BukkitTelnet extends JavaPlugin
 
             listenerThread = new Thread(new Runnable()
             {
+                @Override
                 public void run()
                 {
                     acceptConnections();
@@ -132,7 +133,7 @@ public class BukkitTelnet extends JavaPlugin
         }
         catch (Throwable ex)
         {
-            log.log(Level.SEVERE, "[" + getDescription().getName() + "]: Error starting server!", ex);
+            BT_Util.log(Level.SEVERE, "Error starting server!\n" + ExceptionUtils.getStackTrace(ex));
         }
     }
 
@@ -148,7 +149,7 @@ public class BukkitTelnet extends JavaPlugin
                 {
                     clientHolder.add(new BT_TelnetListener(client, this));
 
-                    log.info("[" + getDescription().getName() + "]: Client connected: " + client.getInetAddress().getHostAddress());
+                    BT_Util.log(Level.INFO, "Client connected: " + client.getInetAddress().getHostAddress());
 
                     Iterator<BT_TelnetListener> listeners = clientHolder.iterator();
                     while (listeners.hasNext())
