@@ -163,7 +163,7 @@ public class BT_TelnetListener extends Handler implements CommandSender
             return;
         }
 
-        Logger.getLogger("Minecraft").addHandler(this);
+        Logger.getLogger("Minecraft-Server").addHandler(this);
 
         while (is_running && clientSocket.isConnected() && is_authenticated)
         {
@@ -248,7 +248,7 @@ public class BT_TelnetListener extends Handler implements CommandSender
         is_running = false;
 
         BT_Util.log(Level.INFO, "Closing connection: " + client_ip);
-        Logger.getLogger("Minecraft").removeHandler(this);
+        Logger.getLogger("Minecraft-Server").removeHandler(this);
 
         if (!clientSocket.isClosed())
         {

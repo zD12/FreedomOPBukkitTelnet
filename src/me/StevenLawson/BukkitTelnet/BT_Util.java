@@ -12,7 +12,7 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 
 public class BT_Util
 {
-    private static final Logger logger = Logger.getLogger("Minecraft");
+    private static final Logger logger = Logger.getLogger("Minecraft-Server");
 
     protected BT_Util()
     {
