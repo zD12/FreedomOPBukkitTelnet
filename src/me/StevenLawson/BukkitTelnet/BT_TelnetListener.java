@@ -10,6 +10,7 @@ import java.util.logging.Logger;
 import org.bukkit.ChatColor;
 import org.bukkit.Server;
 import org.bukkit.command.CommandSender;
+import org.bukkit.event.server.RemoteServerCommandEvent;
 import org.bukkit.permissions.Permission;
 import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.permissions.PermissionAttachmentInfo;
@@ -226,6 +227,15 @@ public class BT_TelnetListener extends Handler implements CommandSender
                     }
                     else
                     {
+                        RemoteServerCommandEvent event = new RemoteServerCommandEvent(this, command);
+
+                        BukkitTelnet.plugin.getServer().getPluginManager().callEvent(event);
+
+                        if (event.getCommand() == null || event.getCommand().equals(""))
+                        {
+                            continue;
+                        }
+
                         plugin.getServer().dispatchCommand(this, command);
                     }
                 }
