@@ -44,6 +44,7 @@ public class BukkitTelnet extends JavaPlugin
     protected String password = null;
     protected List<String> bypass_password_ips = null;
 
+    @SuppressWarnings("unchecked")
     private void loadConfig()
     {
         BT_Util.createDefaultConfiguration(CONFIG_FILE, getFile());

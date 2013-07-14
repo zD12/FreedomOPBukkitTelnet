@@ -21,9 +21,9 @@ public class BT_Util
     public static void log(Level level, String message)
     {
         logger.log(level, "[{0}]: {1}", new Object[]
-                {
-                    BukkitTelnet.plugin.getDescription().getName(), message
-                });
+        {
+            BukkitTelnet.plugin.getDescription().getName(), message
+        });
     }
 
     public static boolean canBypassPassword(String user_ip)
