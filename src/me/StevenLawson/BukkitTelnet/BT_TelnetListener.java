@@ -3,10 +3,10 @@ package me.StevenLawson.BukkitTelnet;
 import java.io.*;
 import java.net.Socket;
 import java.util.Set;
+import java.util.logging.Formatter;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
-import java.util.logging.Logger;
 import org.bukkit.ChatColor;
 import org.bukkit.Server;
 import org.bukkit.command.CommandSender;
@@ -33,6 +33,7 @@ public class BT_TelnetListener extends Handler implements CommandSender
     private BukkitTelnet plugin;
     private String client_ip;
     private FilterMode filter_mode = FilterMode.FULL;
+    private Formatter formatter = null;
     private static final String COMMAND_REGEX = "[^\\x20-\\x7E]";
     private static final String LOGIN_REGEX = "[^a-zA-Z0-9\\-\\.\\_]";
 
@@ -164,7 +165,7 @@ public class BT_TelnetListener extends Handler implements CommandSender
             return;
         }
 
-        Logger.getLogger("Minecraft-Server").addHandler(this);
+        org.bukkit.Bukkit.getLogger().addHandler(this);
 
         while (is_running && clientSocket.isConnected() && is_authenticated)
         {
@@ -258,7 +259,7 @@ public class BT_TelnetListener extends Handler implements CommandSender
         is_running = false;
 
         BT_Util.log(Level.INFO, "Closing connection: " + client_ip);
-        Logger.getLogger("Minecraft-Server").removeHandler(this);
+        org.bukkit.Bukkit.getLogger().removeHandler(this);
 
         if (!clientSocket.isClosed())
         {
@@ -315,9 +316,46 @@ public class BT_TelnetListener extends Handler implements CommandSender
     }
 
     @Override
+    public Formatter getFormatter()
+    {
+        if (this.formatter == null)
+        {
+            this.formatter = super.getFormatter();
+
+            Handler[] handlers = org.bukkit.Bukkit.getLogger().getHandlers();
+            for (Handler handler : handlers)
+            {
+                if (handler.getClass().getName().startsWith("org.bukkit.craftbukkit"))
+                {
+                    Formatter _formatter = handler.getFormatter();
+                    if (_formatter != null)
+                    {
+                        this.formatter = _formatter;
+                        break;
+                    }
+                }
+            }
+        }
+        return this.formatter;
+    }
+
+    @Override
     public void publish(LogRecord record)
     {
-        String message = ChatColor.stripColor(record.getMessage());
+        if (record == null)
+        {
+            return;
+        }
+
+        String message = record.getMessage();
+
+        Formatter _formatter = getFormatter();
+        if (_formatter != null)
+        {
+            message = _formatter.formatMessage(record);
+        }
+
+        message = ChatColor.stripColor(message);
 
         if (filter_mode == FilterMode.CHAT_ONLY)
         {

@@ -12,7 +12,7 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 
 public class BT_Util
 {
-    private static final Logger logger = Logger.getLogger("Minecraft-Server");
+    private static final Logger logger = org.bukkit.Bukkit.getLogger();
 
     protected BT_Util()
     {
@@ -20,10 +20,7 @@ public class BT_Util
 
     public static void log(Level level, String message)
     {
-        logger.log(level, "[{0}]: {1}", new Object[]
-        {
-            BukkitTelnet.plugin.getDescription().getName(), message
-        });
+        logger.log(level, String.format("[%s]: %s", BukkitTelnet.plugin.getDescription().getName(), message));
     }
 
     public static boolean canBypassPassword(String user_ip)
