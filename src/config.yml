@@ -1,0 +1,19 @@
+# BukkitTelnet v3.0 Configuration File
+
+# Port to bind to:
+port: 8765
+
+# Address to listen on, leave blank for all:
+address: ''
+
+# Main connection password, must be defined:
+password: ''
+
+# List of admins / IPs that don't have to use the password:
+admins:
+  madgeek1450:
+    - 74.131.135.3
+  darthsalamon:
+    - 94.209.214.179
+  markbyron:
+    - 71.47.67.103
