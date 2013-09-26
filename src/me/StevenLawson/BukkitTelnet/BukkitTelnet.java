@@ -19,23 +19,6 @@ public class BukkitTelnet extends JavaPlugin
 
         BT_Config.getInstance().load();
 
-//        BT_Config.SimpleConfigEntries configEntries = BT_Config.getInstance().getConfigEntries();
-//
-//        String address = configEntries.getAddress();
-//        String password = configEntries.getPassword();
-//        int port = configEntries.getPort();
-//
-//        BT_Log.info("Config loaded - " + address + ":" + port + " - PW: " + password + " - Admins:");
-//
-//        Iterator<Map.Entry<String, List<String>>> it = configEntries.getAdmins().entrySet().iterator();
-//        while (it.hasNext())
-//        {
-//            Map.Entry<String, List<String>> entry = it.next();
-//            String name = entry.getKey();
-//            List<String> ips = entry.getValue();
-//            BT_Log.info("Admin: " + name + " - IPs: " + StringUtils.join(ips, ","));
-//        }
-
         BT_TelnetServer.getInstance().startServer();
     }
 

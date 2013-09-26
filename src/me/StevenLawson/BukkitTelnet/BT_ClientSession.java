@@ -6,6 +6,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -17,7 +20,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 public final class BT_ClientSession extends Thread
 {
     private static final Pattern NONASCII_FILTER = Pattern.compile("[^\\x20-\\x7E]");
-    private static final Pattern LOGIN_NAME_FILTER = Pattern.compile("[^a-zA-Z0-9\\-\\.\\_]");
+    private static final Pattern AUTH_INPUT_FILTER = Pattern.compile("[^a-zA-Z0-9\\-\\.\\_]");
     //
     private final Socket clientSocket;
     private final String clientAddress;
@@ -68,7 +71,7 @@ public final class BT_ClientSession extends Thread
             {
                 try
                 {
-                    writeOutFormatted("Closing connection.");
+                    writeOutFormatted("Closing connection.", true);
                     this.clientSocket.close();
                 }
                 catch (Exception ex)
@@ -98,9 +101,9 @@ public final class BT_ClientSession extends Thread
         }
     }
 
-    public void writeOutFormatted(String message)
+    public void writeOutFormatted(String message, boolean newLine)
     {
-        writeOut("[BukkitTelnet (Console)]: " + message + "\r\n:");
+        writeOut("[BukkitTelnet (Console)]: " + message + (newLine ? "\r\n:" : ""));
     }
 
     public void flush()
@@ -181,30 +184,132 @@ public final class BT_ClientSession extends Thread
 
         writeOut(":");
 
-        writeOutFormatted("Session Started.");
+        writeOutFormatted("Session Started.", true);
 
-        authenticateSession();
-
-        sessionMainLoop();
+        if (authenticateSession())
+        {
+            sessionMainLoop();
+        }
+        else
+        {
+            writeOutFormatted("Authentication failed.", true);
+        }
 
         terminateSession();
     }
 
-    private void authenticateSession()
+    private boolean authenticateSession()
     {
         if (this.hasTerminated)
         {
-            return;
+            return false;
         }
 
         try
         {
-            writeOutFormatted("Authentication not yet implemented...");
+            boolean isPreAuthenticated = false;
+
+            if (this.clientAddress != null)
+            {
+                final Iterator<Map.Entry<String, List<String>>> it = BT_Config.getInstance().getConfigEntries().getAdmins().entrySet().iterator();
+                adminMapLoop:
+                while (it.hasNext())
+                {
+                    final Map.Entry<String, List<String>> entry = it.next();
+                    final List<String> adminIPs = entry.getValue();
+                    if (adminIPs != null)
+                    {
+                        for (final String ip : adminIPs)
+                        {
+                            if (fuzzyIpMatch(ip, this.clientAddress, 3))
+                            {
+                                isPreAuthenticated = true;
+                                this.userName = entry.getKey();
+                                break adminMapLoop;
+                            }
+                        }
+                    }
+                }
+            }
+
+            final TelnetPreLoginEvent event = new TelnetPreLoginEvent(this.clientAddress, isPreAuthenticated ? this.userName : null, isPreAuthenticated);
+
+            Bukkit.getServer().getPluginManager().callEvent(event);
+
+            if (event.isCancelled())
+            {
+                return false;
+            }
+
+            if (event.canBypassPassword())
+            {
+                this.userName = event.getName();
+                return true;
+            }
+            else
+            {
+                boolean gotValidUsername = false;
+                int tries = 0;
+                while (tries++ < 3)
+                {
+                    try
+                    {
+                        writeOutFormatted("Username: ", false);
+                        String _userName = AUTH_INPUT_FILTER.matcher(reader.readLine()).replaceAll("").trim();
+                        writeOut(":");
+
+                        if (_userName != null && !_userName.isEmpty())
+                        {
+                            this.userName = _userName;
+                            gotValidUsername = true;
+                            break;
+                        }
+                        else
+                        {
+                            writeOutFormatted("Invalid username.", true);
+                        }
+                    }
+                    catch (IOException ex)
+                    {
+                    }
+                }
+
+                if (!gotValidUsername)
+                {
+                    return false;
+                }
+
+                tries = 0;
+                while (tries++ < 3)
+                {
+                    try
+                    {
+                        writeOutFormatted("Password: ", false);
+                        String _password = AUTH_INPUT_FILTER.matcher(reader.readLine()).replaceAll("").trim();
+                        writeOut(":");
+
+                        if (_password != null && !_password.isEmpty() && BT_TelnetServer.getInstance().getPassword().equals(_password))
+                        {
+                            return true;
+                        }
+                        else
+                        {
+                            writeOutFormatted("Invalid password.", true);
+                            Thread.sleep(2000);
+                        }
+                    }
+                    catch (IOException ex)
+                    {
+                    }
+                }
+            }
         }
         catch (Exception ex)
         {
             BT_Log.severe(ex);
         }
+
+        return false;
     }
 
     private void sessionMainLoop()
@@ -216,6 +321,9 @@ public final class BT_ClientSession extends Thread
 
         try
         {
+            writeOutFormatted("Logged in as " + this.userName + ".", true);
+            BT_Log.info(this.clientAddress + " logged in as \"" + this.userName + "\".");
+
             BT_Log.getLogger().addHandler(this.sessionLogHandler = new SessionLogHandler(this));
 
             while (this.isConnected())
@@ -246,6 +354,44 @@ public final class BT_ClientSession extends Thread
     private static String stripNonAscii(String string)
     {
         return NONASCII_FILTER.matcher(string).replaceAll("");
+    }
+
+    private static boolean fuzzyIpMatch(String a, String b, int octets)
+    {
+        boolean match = true;
+
+        String[] aParts = a.split("\\.");
+        String[] bParts = b.split("\\.");
+
+        if (aParts.length != 4 || bParts.length != 4)
+        {
+            return false;
+        }
+
+        if (octets > 4)
+        {
+            octets = 4;
+        }
+        else if (octets < 1)
+        {
+            octets = 1;
+        }
+
+        for (int i = 0; i < octets && i < 4; i++)
+        {
+            if (aParts[i].equals("*") || bParts[i].equals("*"))
+            {
+                continue;
+            }
+
+            if (!aParts[i].equals(bParts[i]))
+            {
+                match = false;
+                break;
+            }
+        }
+
+        return match;
     }
 
     private static class SessionLogHandler extends BT_Handler

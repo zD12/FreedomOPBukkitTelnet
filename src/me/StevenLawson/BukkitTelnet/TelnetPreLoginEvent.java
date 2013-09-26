@@ -9,7 +9,7 @@ public class TelnetPreLoginEvent extends Event implements Cancellable
     private static final HandlerList handlers = new HandlerList();
     //
     private final String ip;
-    private final String name;
+    private String name = null;
     private boolean bypassPassword;
     private boolean cancelled;
 
@@ -51,6 +51,11 @@ public class TelnetPreLoginEvent extends Event implements Cancellable
     public String getName()
     {
         return name;
+    }
+
+    public void setName(String name)
+    {
+        this.name = name;
     }
 
     public boolean canBypassPassword()
