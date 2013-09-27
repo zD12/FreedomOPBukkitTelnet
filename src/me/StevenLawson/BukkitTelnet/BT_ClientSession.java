@@ -20,7 +20,8 @@ import org.bukkit.scheduler.BukkitRunnable;
 public final class BT_ClientSession extends Thread
 {
     private static final Pattern NONASCII_FILTER = Pattern.compile("[^\\x20-\\x7E]");
-    private static final Pattern AUTH_INPUT_FILTER = Pattern.compile("[^a-zA-Z0-9\\-\\.\\_]");
+    private static final Pattern AUTH_INPUT_FILTER = Pattern.compile("[^a-zA-Z0-9]");
+    private static final Pattern COMMAND_INPUT_FILTER = Pattern.compile("^[^a-zA-Z0-9/\\?!\\.]+");
     //
     private final Socket clientSocket;
     private final String clientAddress;
@@ -255,8 +256,14 @@ public final class BT_ClientSession extends Thread
                     try
                     {
                         writeOutFormatted("Username: ", false);
-                        String _userName = AUTH_INPUT_FILTER.matcher(reader.readLine()).replaceAll("").trim();
+
+                        String _userName = reader.readLine();
                         writeOut(":");
+
+                        if (_userName != null && !_userName.isEmpty())
+                        {
+                            _userName = AUTH_INPUT_FILTER.matcher(_userName).replaceAll("").trim();
+                        }
 
                         if (_userName != null && !_userName.isEmpty())
                         {
@@ -285,8 +292,14 @@ public final class BT_ClientSession extends Thread
                     try
                     {
                         writeOutFormatted("Password: ", false);
-                        String _password = AUTH_INPUT_FILTER.matcher(reader.readLine()).replaceAll("").trim();
+
+                        String _password = reader.readLine();
                         writeOut(":");
+
+                        if (_password != null && !_password.isEmpty())
+                        {
+                            _password = AUTH_INPUT_FILTER.matcher(_password).replaceAll("").trim();
+                        }
 
                         if (_password != null && !_password.isEmpty() && BT_TelnetServer.getInstance().getPassword().equals(_password))
                         {
@@ -339,9 +352,13 @@ public final class BT_ClientSession extends Thread
 
                 writeOut(":");
 
-                if (command != null && !(command = stripNonAscii(command).trim()).isEmpty())
+                if (command != null)
                 {
-                    sendBukkitCommand(command);
+                    command = COMMAND_INPUT_FILTER.matcher(NONASCII_FILTER.matcher(command).replaceAll("")).replaceFirst("").trim();
+                    if (!command.isEmpty())
+                    {
+                        sendBukkitCommand(command);
+                    }
                 }
             }
         }
@@ -349,11 +366,6 @@ public final class BT_ClientSession extends Thread
         {
             BT_Log.severe(ex);
         }
-    }
-
-    private static String stripNonAscii(String string)
-    {
-        return NONASCII_FILTER.matcher(string).replaceAll("");
     }
 
     private static boolean fuzzyIpMatch(String a, String b, int octets)
