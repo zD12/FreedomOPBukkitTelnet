@@ -1,13 +1,14 @@
 package me.StevenLawson.BukkitTelnet;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.commons.io.FileUtils;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 public class BT_Config
@@ -78,7 +79,7 @@ public class BT_Config
         try
         {
             final InputStream defaultConfig = getDefaultConfig();
-            FileUtils.copyInputStreamToFile(defaultConfig, targetFile);
+            copy(defaultConfig, targetFile);
             defaultConfig.close();
         }
         catch (Exception ex)
@@ -111,6 +112,24 @@ public class BT_Config
             BT_Log.severe(ex);
         }
         throw new IOException();
+    }
+
+    private static void copy(InputStream in, File file) throws IOException
+    {
+        if (!file.exists())
+        {
+            file.getParentFile().mkdirs();
+        }
+
+        OutputStream out = new FileOutputStream(file);
+        byte[] buf = new byte[1024];
+        int len;
+        while ((len = in.read(buf)) > 0)
+        {
+            out.write(buf, 0, len);
+        }
+        out.close();
+        in.close();
     }
 
     public SimpleConfigEntries getConfigEntries()
