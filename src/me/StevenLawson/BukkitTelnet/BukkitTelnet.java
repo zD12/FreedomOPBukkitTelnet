@@ -15,19 +15,20 @@ public class BukkitTelnet extends JavaPlugin
     @Override
     public void onEnable()
     {
-        BT_Log.info("Plugin enabled.");
-
         BT_Config.getInstance().load();
 
         BT_TelnetServer.getInstance().startServer();
+        
+        BT_Log.info(plugin.getName() + " v" + plugin.getDescription().getVersion() + " enabled");
+
     }
 
     @Override
     public void onDisable()
     {
-        BT_Log.info("Plugin disabled.");
-
         BT_TelnetServer.getInstance().stopServer();
+        
+        BT_Log.info("Plugin disabled");
     }
 
     public static BukkitTelnet getPlugin() throws PluginNotLoadedException

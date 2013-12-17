@@ -121,9 +121,9 @@ public final class BT_ClientSession extends Thread
         }
     }
 
-    public void sendBukkitCommand(final String _command)
+    public void sendBukkitCommand(final String command)
     {
-        final CommandSender commandSender = getCommandSender();
+        final CommandSender sender = getCommandSender();
 
         try
         {
@@ -133,15 +133,23 @@ public final class BT_ClientSession extends Thread
                 public void run()
                 {
                     final Server server = Bukkit.getServer();
-                    if (server != null)
+
+                    final TelnetCommandEvent telnetEvent = new TelnetCommandEvent(sender, command);
+                    server.getPluginManager().callEvent(telnetEvent);
+
+                    if (telnetEvent.isCancelled())
                     {
-                        final RemoteServerCommandEvent event = new RemoteServerCommandEvent(commandSender, _command);
-                        server.getPluginManager().callEvent(event);
-                        String command = event.getCommand();
-                        if (command != null && !command.isEmpty())
-                        {
-                            server.dispatchCommand(commandSender, command);
-                        }
+                        return;
+                    }
+
+                    // Deprecated
+                    final RemoteServerCommandEvent serverEvent = new RemoteServerCommandEvent(telnetEvent.getSender(), telnetEvent.getCommand());
+                    server.getPluginManager().callEvent(serverEvent);
+
+                    final String command = serverEvent.getCommand();
+                    if (command != null && !command.isEmpty())
+                    {
+                        server.dispatchCommand(sender, command);
                     }
                 }
             }.runTask(BukkitTelnet.getPlugin());

@@ -7,11 +7,11 @@ import org.bukkit.event.HandlerList;
 public class TelnetPreLoginEvent extends Event implements Cancellable
 {
     private static final HandlerList handlers = new HandlerList();
+    private boolean cancelled = false;
     //
-    private final String ip;
     private String name = null;
+    private final String ip;
     private boolean bypassPassword;
-    private boolean cancelled;
 
     public TelnetPreLoginEvent(String ip, String name, boolean bypassPassword)
     {

@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.logging.Level;
 
 public class BT_TelnetServer
 {
@@ -56,11 +55,11 @@ public class BT_TelnetServer
         {
             if (hostAddress == null)
             {
-                serverSocket = new java.net.ServerSocket(port);
+                serverSocket = new ServerSocket(port);
             }
             else
             {
-                serverSocket = new java.net.ServerSocket(port, 50, hostAddress);
+                serverSocket = new ServerSocket(port, 50, hostAddress);
             }
 
             String hostIP = serverSocket.getInetAddress().getHostAddress();
@@ -73,7 +72,8 @@ public class BT_TelnetServer
         }
         catch (IOException ex)
         {
-            BT_Log.getLogger().log(Level.SEVERE, "Cant bind to " + (hostAddress == null ? "*" : hostAddress) + ":" + port, ex);
+            BT_Log.severe("Cant bind to " + (hostAddress == null ? "*" : hostAddress) + ":" + port);
+            BT_Log.severe(ex);
         }
 
         if (serverSocket != null)
