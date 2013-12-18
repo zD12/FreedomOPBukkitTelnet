@@ -18,7 +18,7 @@ public class BukkitTelnet extends JavaPlugin
         BT_Config.getInstance().load();
 
         BT_TelnetServer.getInstance().startServer();
-        
+
         BT_Log.info(plugin.getName() + " v" + plugin.getDescription().getVersion() + " enabled");
 
     }
@@ -27,7 +27,7 @@ public class BukkitTelnet extends JavaPlugin
     public void onDisable()
     {
         BT_TelnetServer.getInstance().stopServer();
-        
+
         BT_Log.info("Plugin disabled");
     }
 

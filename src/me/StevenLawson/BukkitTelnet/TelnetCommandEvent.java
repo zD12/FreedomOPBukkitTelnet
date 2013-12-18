@@ -12,18 +12,24 @@ public class TelnetCommandEvent extends Event implements Cancellable
     //
     private CommandSender sender;
     private String command;
-    
-    public TelnetCommandEvent(CommandSender sender, String command) {
+
+    public TelnetCommandEvent(CommandSender sender, String command)
+    {
         this.sender = sender;
         this.command = command;
     }
-    
+
     @Override
     public HandlerList getHandlers()
     {
         return handlers;
     }
-    
+
+    public static HandlerList getHandlerList()
+    {
+        return handlers;
+    }
+
     @Override
     public boolean isCancelled()
     {
@@ -35,20 +41,24 @@ public class TelnetCommandEvent extends Event implements Cancellable
     {
         cancelled = cancel;
     }
-    
-    public CommandSender getSender() {
+
+    public CommandSender getSender()
+    {
         return sender;
     }
-    
-    public void setSender(CommandSender sender) {
+
+    public void setSender(CommandSender sender)
+    {
         this.sender = sender;
     }
-    
-    public String getCommand() {
+
+    public String getCommand()
+    {
         return command;
     }
-    
-    public void setCommand(String command) {
+
+    public void setCommand(String command)
+    {
         this.command = command;
     }
 }
