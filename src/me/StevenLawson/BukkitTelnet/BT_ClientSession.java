@@ -382,6 +382,7 @@ public final class BT_ClientSession extends Thread
                             else if (command.equalsIgnoreCase("telnet.stopserver"))
                             {
                                 writeOut("Shutting down the server...\r\n");
+                                BT_Log.warning(this.userName + " has shutdown the server.");
                                 System.exit(0);
                             }
                             else if (command.equalsIgnoreCase("telnet.log"))
