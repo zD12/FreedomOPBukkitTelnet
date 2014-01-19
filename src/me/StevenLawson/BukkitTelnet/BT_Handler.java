@@ -3,6 +3,9 @@ package me.StevenLawson.BukkitTelnet;
 import java.util.logging.Formatter;
 import java.util.logging.Handler;
 import java.util.logging.LogRecord;
+
+import me.StevenLawson.BukkitTelnet.BT_ClientSession.FilterMode;
+
 import org.bukkit.ChatColor;
 
 public abstract class BT_Handler extends Handler
@@ -33,7 +36,24 @@ public abstract class BT_Handler extends Handler
 
         message = ChatColor.stripColor(message);
 
-        writeOut(message + "\r\n:");
+        if (BT_ClientSession.filter_mode == FilterMode.CHAT_ONLY)
+        {
+            if (message.startsWith("<") || message.startsWith("[Server:") || message.startsWith("[CONSOLE]<") || message.startsWith("[TotalFreedomMod] [ADMIN]"))
+            {
+                writeOut(message + "\r\n:");
+            }
+        }
+        else if (BT_ClientSession.filter_mode == FilterMode.NONCHAT_ONLY)
+        {
+            if (!(message.startsWith("<") || message.startsWith("[Server:") || message.startsWith("[CONSOLE]<") || message.startsWith("[TotalFreedomMod] [ADMIN]")))
+            {
+                writeOut(message + "\r\n:");
+            }
+        }
+        else
+        {
+            writeOut(message + "\r\n:");
+        }
     }
 
     @Override
