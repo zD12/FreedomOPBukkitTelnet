@@ -378,6 +378,7 @@ public final class BT_ClientSession extends Thread
                                 writeOut("telnet.help - See all of the telnet commands.\r\n");
                                 writeOut("telnet.stopserver - Shutdown the server.\r\n");
                                 writeOut("telnet.log - Change your logging settings.\r\n");
+                                writeOut("telnet.exit - Quit the telnet session.");
                             }
                             else if (command.equalsIgnoreCase("telnet.stopserver"))
                             {
@@ -397,6 +398,10 @@ public final class BT_ClientSession extends Thread
                                     filter_mode = FilterMode.CHAT_ONLY;
                                     writeOut("Showing chat log only.\r\n");
                                 }
+                            }
+                            else if (command.equalsIgnoreCase("telnet.exit"))
+                            {
+                                terminateSession();
                             }
                         }
                         else
