@@ -19,6 +19,10 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 public final class BT_ClientSession extends Thread
 {
+    public enum FilterMode
+    {
+        FULL, NONCHAT_ONLY, CHAT_ONLY
+    }
     private static final Pattern NONASCII_FILTER = Pattern.compile("[^\\x20-\\x7E]");
     private static final Pattern AUTH_INPUT_FILTER = Pattern.compile("[^a-zA-Z0-9]");
     private static final Pattern COMMAND_INPUT_FILTER = Pattern.compile("^[^a-zA-Z0-9/\\?!\\.]+");
@@ -26,6 +30,7 @@ public final class BT_ClientSession extends Thread
     private final Socket clientSocket;
     private final String clientAddress;
     //
+    public static FilterMode filter_mode = FilterMode.FULL;
     private SessionLogHandler sessionLogHandler;
     private SessionCommandSender sessionCommandSender;
     private BufferedWriter writer;
@@ -365,7 +370,44 @@ public final class BT_ClientSession extends Thread
                     command = COMMAND_INPUT_FILTER.matcher(NONASCII_FILTER.matcher(command).replaceAll("")).replaceFirst("").trim();
                     if (!command.isEmpty())
                     {
-                        sendBukkitCommand(command);
+                        if (command.toLowerCase().startsWith("telnet"))
+                        {
+                            if (command.equalsIgnoreCase("telnet.help"))
+                            {
+                                writeOut("Telnet commands:\r\n");
+                                writeOut("telnet.help - See all of the telnet commands.\r\n");
+                                writeOut("telnet.stopserver - Shutdown the server.\r\n");
+                                writeOut("telnet.log - Change your logging settings.\r\n");
+                                writeOut("telnet.exit - Quit the telnet session.");
+                            }
+                            else if (command.equalsIgnoreCase("telnet.stopserver"))
+                            {
+                                writeOut("Shutting down the server...\r\n");
+                                BT_Log.warning(this.userName + " has shutdown the server.");
+                                System.exit(0);
+                            }
+                            else if (command.equalsIgnoreCase("telnet.log"))
+                            {
+                                if (filter_mode == FilterMode.CHAT_ONLY)
+                                {
+                                    filter_mode = FilterMode.FULL;
+                                    writeOut("Showing full console log.\r\n");
+                                }
+                                else
+                                {
+                                    filter_mode = FilterMode.CHAT_ONLY;
+                                    writeOut("Showing chat log only.\r\n");
+                                }
+                            }
+                            else if (command.equalsIgnoreCase("telnet.exit"))
+                            {
+                                terminateSession();
+                            }
+                        }
+                        else
+                        {
+                            sendBukkitCommand(command);
+                        }
                     }
                 }
             }
