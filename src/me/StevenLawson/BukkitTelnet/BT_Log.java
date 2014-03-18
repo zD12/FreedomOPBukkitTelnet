@@ -6,7 +6,9 @@ import org.bukkit.Bukkit;
 
 public final class BT_Log
 {
-    private static final Logger LOGGER = Bukkit.getLogger();
+    private static final Logger FALLBACK_LOGGER = Bukkit.getLogger();
+    private static Logger serverLogger = null;
+    private static Logger pluginLogger = null;
 
     private BT_Log()
     {
@@ -64,21 +66,33 @@ public final class BT_Log
     // Utility
     private static void log(Level level, String message, boolean raw)
     {
-        if (!raw)
-        {
-            message = "[BukkitTelnet] " + message;
-        }
-
-        getLogger().log(level, message);
+        getLogger(raw).log(level, message);
     }
 
     private static void log(Level level, Throwable throwable)
     {
-        getLogger().log(level, null, throwable);
+        getLogger(false).log(level, null, throwable);
     }
 
-    public static Logger getLogger()
+    public static void setServerLogger(Logger logger)
     {
-        return LOGGER;
+        serverLogger = logger;
+    }
+
+    public static void setPluginLogger(Logger logger)
+    {
+        pluginLogger = logger;
+    }
+
+    public static Logger getLogger(boolean raw)
+    {
+        if (raw || pluginLogger == null)
+        {
+            return (serverLogger != null ? serverLogger : FALLBACK_LOGGER);
+        }
+        else
+        {
+            return pluginLogger;
+        }
     }
 }

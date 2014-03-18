@@ -1,21 +1,27 @@
 package me.StevenLawson.BukkitTelnet;
 
+import org.bukkit.Server;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class BukkitTelnet extends JavaPlugin
 {
-    private static BukkitTelnet plugin = null;
+    public static BukkitTelnet plugin;
+    public static Server server;
 
     @Override
     public void onLoad()
     {
         plugin = this;
+        server = plugin.getServer();
+        
+        BT_Log.setPluginLogger(plugin.getLogger());
+        BT_Log.setServerLogger(server.getLogger());
     }
 
     @Override
     public void onEnable()
     {
-        BT_Config.getInstance().load();
+        BT_Config.getInstance().loadConfig();
 
         BT_TelnetServer.getInstance().startServer();
 
@@ -29,22 +35,5 @@ public class BukkitTelnet extends JavaPlugin
         BT_TelnetServer.getInstance().stopServer();
 
         BT_Log.info("Plugin disabled");
-    }
-
-    public static BukkitTelnet getPlugin() throws PluginNotLoadedException
-    {
-        if (plugin == null)
-        {
-            throw new PluginNotLoadedException();
-        }
-
-        return plugin;
-    }
-
-    public static class PluginNotLoadedException extends Exception
-    {
-        public PluginNotLoadedException()
-        {
-        }
     }
 }

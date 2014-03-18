@@ -20,7 +20,7 @@ public class BT_TelnetServer
 
     public void startServer()
     {
-        this.stopServer();
+        stopServer();
 
         final BT_Config.SimpleConfigEntries configEntries = BT_Config.getInstance().getConfigEntries();
 

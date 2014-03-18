@@ -1,5 +1,7 @@
 package me.StevenLawson.BukkitTelnet;
 
+import me.StevenLawson.BukkitTelnet.api.TelnetPreLoginEvent;
+import me.StevenLawson.BukkitTelnet.api.TelnetCommandEvent;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -68,7 +70,7 @@ public final class BT_ClientSession extends Thread
 
         if (this.sessionLogHandler != null)
         {
-            BT_Log.getLogger().removeHandler(this.sessionLogHandler);
+            BT_Log.getLogger(true).removeHandler(this.sessionLogHandler);
         }
 
         synchronized (this.clientSocket)
@@ -157,7 +159,7 @@ public final class BT_ClientSession extends Thread
                         server.dispatchCommand(sender, command);
                     }
                 }
-            }.runTask(BukkitTelnet.getPlugin());
+            }.runTask(BukkitTelnet.plugin);
         }
         catch (Exception ex)
         {
@@ -350,7 +352,7 @@ public final class BT_ClientSession extends Thread
             writeOutFormatted("Logged in as " + this.userName + ".", true);
             BT_Log.info(this.clientAddress + " logged in as \"" + this.userName + "\".");
 
-            BT_Log.getLogger().addHandler(this.sessionLogHandler = new SessionLogHandler(this));
+            BT_Log.getLogger(true).addHandler(this.sessionLogHandler = new SessionLogHandler(this));
 
             while (this.isConnected())
             {
