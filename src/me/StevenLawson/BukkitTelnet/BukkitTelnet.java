@@ -13,7 +13,7 @@ public class BukkitTelnet extends JavaPlugin
     {
         plugin = this;
         server = plugin.getServer();
-        
+
         BT_Log.setPluginLogger(plugin.getLogger());
         BT_Log.setServerLogger(server.getLogger());
     }
