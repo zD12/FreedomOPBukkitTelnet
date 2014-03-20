@@ -1,4 +1,4 @@
-package me.StevenLawson.BukkitTelnet;
+package me.StevenLawson.BukkitTelnet.session;
 
 import java.util.Set;
 import org.bukkit.Bukkit;
@@ -9,8 +9,27 @@ import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.permissions.PermissionAttachmentInfo;
 import org.bukkit.plugin.Plugin;
 
-public abstract class BT_CommandSender implements CommandSender
+public class SessionCommandSender implements CommandSender
 {
+    private final ClientSession session;
+
+    protected SessionCommandSender(ClientSession session)
+    {
+        this.session = session;
+    }
+
+    @Override
+    public void sendMessage(String message)
+    {
+        session.printRaw(message + "\r\n:");
+    }
+
+    @Override
+    public String getName()
+    {
+        return this.session.getUserName();
+    }
+
     @Override
     public void sendMessage(String[] messages)
     {

@@ -1,33 +1,30 @@
 package me.StevenLawson.BukkitTelnet;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import net.pravian.bukkitlib.YamlConfig;
 
-public class BT_Config
+public class TelnetConfig
 {
-    private YamlConfig config = null;
+    private final YamlConfig config;
     private final SimpleConfigEntries configEntries;
 
-    private BT_Config()
+    private TelnetConfig()
     {
         configEntries = new SimpleConfigEntries();
+        config = new YamlConfig(BukkitTelnet.plugin, "config.yml", true);
     }
 
     public void loadConfig()
     {
-        if (config == null)
-        {
-            config = new YamlConfig(BukkitTelnet.plugin, "config.yml", true);
-        }
-
         config.load();
 
         configEntries.setAddress(config.getString("address"));
         configEntries.setPort(config.getInt("port"));
         configEntries.setPassword(config.getString("password"));
-        configEntries.getAdmins().clear();
+        configEntries.clearAdmins();
 
         if (config.isConfigurationSection("admins"))
         {
@@ -39,15 +36,15 @@ public class BT_Config
                     continue;
                 }
 
-                configEntries.getAdmins().put(admin, config.getStringList("admins." + admin));
+                configEntries.addAdmin(admin, config.getStringList("admins." + admin));
             }
         }
 
-        if (configEntries.getPassword().equals(""))
+        if (configEntries.getPassword().isEmpty())
         {
             configEntries.setPassword(config.getDefaultConfig().getString("password"));
-            BT_Log.warning("Password set to blank in config!");
-            BT_Log.warning("Defaulting to " + configEntries.getPassword());
+            TelnetLogger.warning("Password is undefined in config!");
+            TelnetLogger.warning("Defaulting to " + configEntries.getPassword());
         }
     }
 
@@ -100,17 +97,27 @@ public class BT_Config
 
         public Map<String, List<String>> getAdmins()
         {
-            return admins;
+            return Collections.unmodifiableMap(admins);
+        }
+
+        private void clearAdmins()
+        {
+            admins.clear();
+        }
+
+        private void addAdmin(String name, List<String> ips)
+        {
+            admins.put(name, ips);
         }
     }
 
-    public static BT_Config getInstance()
+    public static TelnetConfig getInstance()
     {
         return BT_ConfigHolder.INSTANCE;
     }
 
     private static class BT_ConfigHolder
     {
-        private static final BT_Config INSTANCE = new BT_Config();
+        private static final TelnetConfig INSTANCE = new TelnetConfig();
     }
 }

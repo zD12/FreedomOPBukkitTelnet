@@ -25,11 +25,10 @@ public class TelnetCommandEvent extends Event implements Cancellable
         return handlers;
     }
 
-    public static HandlerList getHandlerList()
-    {
-        return handlers;
-    }
-
+    //public static HandlerList getHandlerList()
+    //{
+    //    return handlers;
+    //}
     @Override
     public boolean isCancelled()
     {
@@ -59,6 +58,11 @@ public class TelnetCommandEvent extends Event implements Cancellable
 
     public void setCommand(String command)
     {
+        if (command == null)
+        {
+            command = "";
+        }
+
         this.command = command;
     }
 }

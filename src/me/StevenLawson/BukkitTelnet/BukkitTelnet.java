@@ -14,26 +14,26 @@ public class BukkitTelnet extends JavaPlugin
         plugin = this;
         server = plugin.getServer();
 
-        BT_Log.setPluginLogger(plugin.getLogger());
-        BT_Log.setServerLogger(server.getLogger());
+        TelnetLogger.setPluginLogger(plugin.getLogger());
+        TelnetLogger.setServerLogger(server.getLogger());
     }
 
     @Override
     public void onEnable()
     {
-        BT_Config.getInstance().loadConfig();
+        TelnetConfig.getInstance().loadConfig();
 
-        BT_TelnetServer.getInstance().startServer();
+        TelnetServer.getInstance().startServer();
 
-        BT_Log.info(plugin.getName() + " v" + plugin.getDescription().getVersion() + " enabled");
+        TelnetLogger.info(plugin.getName() + " v" + plugin.getDescription().getVersion() + " enabled");
 
     }
 
     @Override
     public void onDisable()
     {
-        BT_TelnetServer.getInstance().stopServer();
+        TelnetServer.getInstance().stopServer();
 
-        BT_Log.info("Plugin disabled");
+        TelnetLogger.info("Plugin disabled.");
     }
 }
