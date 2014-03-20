@@ -33,7 +33,7 @@ public final class ClientSession extends Thread
     //
     private final SessionCommandSender commandSender;
     private final SessionLogAppender logAppender;
-    private FilterMode filterMode = FilterMode.FULL;
+    private FilterMode filterMode;
     //
     private BufferedWriter writer;
     private BufferedReader reader;
@@ -47,6 +47,7 @@ public final class ClientSession extends Thread
         this.username = "";
         this.commandSender = new SessionCommandSender(this);
         this.logAppender = new SessionLogAppender(this);
+        this.filterMode = FilterMode.FULL;
         this.hasTerminated = false;
 
         TelnetLogger.info("Client connected: " + clientAddress);
