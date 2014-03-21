@@ -38,7 +38,10 @@ public class SessionLogAppender extends AbstractAppender
 
         if (session.getFilterMode() == FilterMode.NONCHAT_ONLY)
         {
-            if (message.startsWith("<") || message.startsWith("[Server") || message.startsWith("[CONSOLE") || message.startsWith("[TotalFreedomMod] [ADMIN]"))
+            if (message.startsWith("<")
+                    || message.startsWith("[Server")
+                    || message.startsWith("[CONSOLE")
+                    || message.startsWith("[TotalFreedomMod] [ADMIN]"))
             {
                 return;
             }

@@ -24,8 +24,8 @@ public class TelnetConfig
         configEntries.setAddress(config.getString("address"));
         configEntries.setPort(config.getInt("port"));
         configEntries.setPassword(config.getString("password"));
-        configEntries.clearAdmins();
 
+        configEntries.clearAdmins();
         if (config.isConfigurationSection("admins"))
         {
             for (String admin : config.getConfigurationSection("admins").getKeys(false))
@@ -113,10 +113,10 @@ public class TelnetConfig
 
     public static TelnetConfig getInstance()
     {
-        return BT_ConfigHolder.INSTANCE;
+        return TelnetConfigHolder.INSTANCE;
     }
 
-    private static class BT_ConfigHolder
+    private static class TelnetConfigHolder
     {
         private static final TelnetConfig INSTANCE = new TelnetConfig();
     }

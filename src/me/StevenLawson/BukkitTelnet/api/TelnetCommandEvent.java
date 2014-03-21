@@ -2,33 +2,20 @@ package me.StevenLawson.BukkitTelnet.api;
 
 import org.bukkit.command.CommandSender;
 import org.bukkit.event.Cancellable;
-import org.bukkit.event.Event;
-import org.bukkit.event.HandlerList;
 
-public class TelnetCommandEvent extends Event implements Cancellable
+public class TelnetCommandEvent extends TelnetEvent implements Cancellable
 {
-    private static final HandlerList handlers = new HandlerList();
-    private boolean cancelled = false;
-    //
+    private boolean cancelled;
     private CommandSender sender;
     private String command;
 
     public TelnetCommandEvent(CommandSender sender, String command)
     {
+        this.cancelled = false;
         this.sender = sender;
         this.command = command;
     }
 
-    @Override
-    public HandlerList getHandlers()
-    {
-        return handlers;
-    }
-
-    //public static HandlerList getHandlerList()
-    //{
-    //    return handlers;
-    //}
     @Override
     public boolean isCancelled()
     {

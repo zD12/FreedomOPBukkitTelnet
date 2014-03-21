@@ -106,7 +106,7 @@ public final class ClientSession extends Thread
 
         hasTerminated = true;
 
-        TelnetLogger.info("Closing connection: " + clientAddress + (username.isEmpty() ? "" : "(" + username + ")"));
+        TelnetLogger.info("Closing connection: " + clientAddress + (username.isEmpty() ? "" : " (" + username + ")"));
         getLogger().removeAppender(logAppender);
 
         synchronized (clientSocket)
@@ -235,7 +235,7 @@ public final class ClientSession extends Thread
             return false;
         }
 
-        boolean authenticated = false;
+        boolean passAuth = false;
 
         // Pre-authenticate IP addresses
         if (clientAddress != null)
@@ -251,7 +251,7 @@ public final class ClientSession extends Thread
                 {
                     if (Util.fuzzyIpMatch(ip, clientAddress, 3))
                     {
-                        authenticated = true;
+                        passAuth = true;
                         this.username = name;
                         break;
                     }
@@ -259,8 +259,8 @@ public final class ClientSession extends Thread
             }
         }
 
-        // Send TelnetPreLoginEvent
-        final TelnetPreLoginEvent event = new TelnetPreLoginEvent(clientAddress, username, authenticated);
+        // TelnetPreLoginEvent authentication
+        final TelnetPreLoginEvent event = new TelnetPreLoginEvent(clientAddress, username, passAuth);
         Bukkit.getServer().getPluginManager().callEvent(event);
 
         if (event.isCancelled())
@@ -270,11 +270,16 @@ public final class ClientSession extends Thread
 
         if (event.canBypassPassword())
         {
-            this.username = event.getName();
-            return true;
+            if (!event.getName().isEmpty()) // If the name hasn't been set, we'll ask for it.
+            {
+                this.username = event.getName();
+                return true;
+            }
+
+            passAuth = true;
         }
 
-        // Username / password authentication
+        // Username
         boolean validUsername = false;
 
         int tries = 0;
@@ -317,6 +322,14 @@ public final class ClientSession extends Thread
             return false;
         }
 
+        // If the TelnetPreLoginEvent authenticates the password,
+        // don't ask for it.
+        if (passAuth)
+        {
+            return true;
+        }
+
+        // Password
         tries = 0;
         while (tries++ < 3)
         {
@@ -373,6 +386,7 @@ public final class ClientSession extends Thread
         // Start feeding data to the client.
         getLogger().addAppender(logAppender);
 
+        // Process commands
         while (syncIsConnected())
         {
             // Read a command
@@ -449,14 +463,18 @@ public final class ClientSession extends Thread
             {
                 filterMode = FilterMode.FULL;
                 println("Showing all logs.");
+                return;
             }
-
             return;
         }
 
         if (command.equalsIgnoreCase("telnet.exit"))
         {
+            println("Goodbye <3");
             syncTerminateSession();
         }
+
+
+        println("Invalid telnet command, use \"telnet.help\" to view help.");
     }
 }
