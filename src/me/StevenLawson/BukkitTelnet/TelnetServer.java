@@ -4,10 +4,6 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
 import me.StevenLawson.BukkitTelnet.TelnetConfig.SimpleConfigEntries;
 
 public class TelnetServer
@@ -48,7 +44,7 @@ public class TelnetServer
         }
 
         // Server socket
-        ServerSocket serversocket;
+        final ServerSocket serversocket;
 
         try
         {
@@ -87,10 +83,10 @@ public class TelnetServer
 
     public static TelnetServer getInstance()
     {
-        return BT_TelnetServerHolder.INSTANCE;
+        return TelnetServerHolder.INSTANCE;
     }
 
-    private static class BT_TelnetServerHolder
+    private static class TelnetServerHolder
     {
         private static final TelnetServer INSTANCE = new TelnetServer();
     }

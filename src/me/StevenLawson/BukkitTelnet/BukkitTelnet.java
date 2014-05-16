@@ -1,5 +1,7 @@
 package me.StevenLawson.BukkitTelnet;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.Logger;
 import org.bukkit.Server;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -22,6 +24,8 @@ public class BukkitTelnet extends JavaPlugin
     public void onEnable()
     {
         TelnetConfig.getInstance().loadConfig();
+
+        ((Logger) LogManager.getRootLogger()).addAppender(TelnetLogAppender.getInstance());
 
         TelnetServer.getInstance().startServer();
 

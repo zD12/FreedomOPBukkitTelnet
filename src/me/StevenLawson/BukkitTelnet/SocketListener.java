@@ -14,11 +14,12 @@ import java.util.logging.Logger;
 public class SocketListener extends Thread
 {
     private final ServerSocket serverSocket;
-    private final List<ClientSession> clientSessions = new ArrayList<ClientSession>();
+    private final List<ClientSession> clientSessions;
 
     public SocketListener(ServerSocket serverSocket)
     {
         this.serverSocket = serverSocket;
+        this.clientSessions = new ArrayList<ClientSession>();
     }
 
     @Override
@@ -48,9 +49,14 @@ public class SocketListener extends Thread
     private void removeDisconnected()
     {
         final Iterator<ClientSession> it = clientSessions.iterator();
+
         while (it.hasNext())
         {
-            if (!it.next().syncIsConnected())
+            final ClientSession session = it.next();
+
+            TelnetLogAppender.getInstance().removeSession(session);
+
+            if (!session.syncIsConnected())
             {
                 it.remove();
             }

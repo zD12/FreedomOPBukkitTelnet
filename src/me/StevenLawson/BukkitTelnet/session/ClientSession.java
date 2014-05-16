@@ -13,7 +13,9 @@ import java.util.Map;
 import java.util.regex.Pattern;
 import me.StevenLawson.BukkitTelnet.BukkitTelnet;
 import me.StevenLawson.BukkitTelnet.TelnetConfig;
+import me.StevenLawson.BukkitTelnet.TelnetLogAppender;
 import me.StevenLawson.BukkitTelnet.TelnetLogger;
+import me.StevenLawson.BukkitTelnet.TelnetServer;
 import me.StevenLawson.BukkitTelnet.Util;
 import org.apache.logging.log4j.LogManager;
 import org.bukkit.Bukkit;
@@ -32,7 +34,6 @@ public final class ClientSession extends Thread
     private final String clientAddress;
     //
     private final SessionCommandSender commandSender;
-    private final SessionLogAppender logAppender;
     private FilterMode filterMode;
     //
     private BufferedWriter writer;
@@ -46,7 +47,6 @@ public final class ClientSession extends Thread
         this.clientAddress = clientSocket.getInetAddress().getHostAddress();
         this.username = "";
         this.commandSender = new SessionCommandSender(this);
-        this.logAppender = new SessionLogAppender(this);
         this.filterMode = FilterMode.FULL;
         this.hasTerminated = false;
 
@@ -92,11 +92,6 @@ public final class ClientSession extends Thread
         }
     }
 
-    private Logger getLogger()
-    {
-        return (Logger) LogManager.getRootLogger();
-    }
-
     public synchronized void syncTerminateSession()
     {
         if (hasTerminated)
@@ -107,7 +102,7 @@ public final class ClientSession extends Thread
         hasTerminated = true;
 
         TelnetLogger.info("Closing connection: " + clientAddress + (username.isEmpty() ? "" : " (" + username + ")"));
-        getLogger().removeAppender(logAppender);
+        TelnetLogAppender.getInstance().removeSession(this);
 
         synchronized (clientSocket)
         {
@@ -136,11 +131,6 @@ public final class ClientSession extends Thread
     public SessionCommandSender getCommandSender()
     {
         return commandSender;
-    }
-
-    public SessionLogAppender getAppender()
-    {
-        return logAppender;
     }
 
     public FilterMode getFilterMode()
@@ -384,7 +374,7 @@ public final class ClientSession extends Thread
         TelnetLogger.info(clientAddress + " logged in as \"" + username + "\".");
 
         // Start feeding data to the client.
-        getLogger().addAppender(logAppender);
+        TelnetLogAppender.getInstance().addSession(this);
 
         // Process commands
         while (syncIsConnected())
