@@ -5,11 +5,8 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class SocketListener extends Thread
 {
@@ -53,11 +50,10 @@ public class SocketListener extends Thread
         while (it.hasNext())
         {
             final ClientSession session = it.next();
-
-            TelnetLogAppender.getInstance().removeSession(session);
-
+            
             if (!session.syncIsConnected())
             {
+                TelnetLogAppender.getInstance().removeSession(session);
                 it.remove();
             }
         }

@@ -38,6 +38,6 @@ public class BukkitTelnet extends JavaPlugin
     {
         TelnetServer.getInstance().stopServer();
 
-        TelnetLogger.info("Plugin disabled.");
+        TelnetLogger.info(plugin.getName() + " disabled.");
     }
 }

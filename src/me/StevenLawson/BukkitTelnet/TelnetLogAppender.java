@@ -8,9 +8,7 @@ import java.util.HashSet;
 import java.util.Set;
 import me.StevenLawson.BukkitTelnet.session.ClientSession;
 import me.StevenLawson.BukkitTelnet.session.FilterMode;
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LogEvent;
-import org.apache.logging.log4j.core.Logger;
 import org.apache.logging.log4j.core.appender.AbstractAppender;
 
 public class TelnetLogAppender extends AbstractAppender

@@ -15,14 +15,11 @@ import me.StevenLawson.BukkitTelnet.BukkitTelnet;
 import me.StevenLawson.BukkitTelnet.TelnetConfig;
 import me.StevenLawson.BukkitTelnet.TelnetLogAppender;
 import me.StevenLawson.BukkitTelnet.TelnetLogger;
-import me.StevenLawson.BukkitTelnet.TelnetServer;
 import me.StevenLawson.BukkitTelnet.Util;
-import org.apache.logging.log4j.LogManager;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Server;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.apache.logging.log4j.core.Logger;
 
 public final class ClientSession extends Thread
 {

@@ -13,7 +13,7 @@ public class SessionCommandSender implements CommandSender
 {
     private final ClientSession session;
 
-    protected SessionCommandSender(ClientSession session)
+    public SessionCommandSender(ClientSession session)
     {
         this.session = session;
     }
