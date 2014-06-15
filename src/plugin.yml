@@ -1,5 +1,5 @@
 name: BukkitTelnet
 main: me.StevenLawson.BukkitTelnet.BukkitTelnet
-version: 4.0
+version: 4.1
 description: Telnet console access plugin.
 authors: [bekvon, Madgeek1450, DarthSalamon]
