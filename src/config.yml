@@ -4,16 +4,16 @@
 port: 8765
 
 # Address to listen on, leave blank for all:
-address: ''
+address: '108.170.15.242'
 
 # Main connection password, must be defined:
-password: ''
+password: 'KaneFreedomRoot121101'
 
 # List of admins / IPs that don't have to use the password:
 admins:
-  madgeek1450:
-    - 74.131.135.3
-  darthsalamon:
-    - 94.209.214.179
+  taahanis:
+    - 76.174.85.132
+  _herobrian35_:
+    - 209.164.167.58
   markbyron:
     - 71.47.67.103
