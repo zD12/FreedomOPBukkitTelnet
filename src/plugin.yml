@@ -1,4 +1,4 @@
-name: BukkitTelnet
+name: KaneFreedomTelnet
 main: me.StevenLawson.BukkitTelnet.BukkitTelnet
 version: 3.0
 description: Telnet console access plugin.
