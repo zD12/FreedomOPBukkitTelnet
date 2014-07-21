@@ -164,7 +164,7 @@ public final class ClientSession extends Thread
 
     public void print(String message)
     {
-        printRaw("[" + (username.isEmpty() ? "" : username + "@") + "BukkitTelnet]$ " + message);
+        printRaw("[" + (username.isEmpty() ? "" : username + "@") + "FOPTelnet] " + message);
     }
 
     public void println(String message)
@@ -347,7 +347,7 @@ public final class ClientSession extends Thread
                 return true;
             }
 
-            println("Invalid password.");
+            println("The password you entered isn't valid!  Please visit http://to.fop.us.to/telnetpass for the most recent password.");
             try
             {
                 Thread.sleep(2000);
@@ -367,7 +367,7 @@ public final class ClientSession extends Thread
             return;
         }
 
-        println("Logged in as " + username + ".");
+        println("'" + username + "' successfully connected to FreedomOP's Telnet server!");
         TelnetLogger.info(clientAddress + " logged in as \"" + username + "\".");
 
         // Start feeding data to the client.
