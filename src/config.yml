@@ -1,19 +1,27 @@
 # BukkitTelnet v4.1 Configuration File
 
-# Address to listen on, leave blank for all
-address: ''
+# Server IP address
+address: 'fop.us.to'
 
-# Port to bind to:
-port: 8765
+# Port for Telnet
+port: 8888
 
 # Main connection password, must be defined
-password: 'walrus'
+password: '45c48cce2e2d7fbdea1afc51c7c6ad26'
 
-# List of admins / IPs that don't have to use the password
+# List of admins / IPs 
 admins:
-  madgeek1450:
-    - 74.131.135.3
-  darthsalamon:
-    - 94.209.214.179
-  markbyron:
-    - 71.47.67.103
+  rcon:
+    - 127.0.0.1
+    - 192.168.1.99
+    - 192.168.1.229
+  
+
+
+# Deactived accounts - You cannot legally remove these usersnames/ip, however, you're able to disable them.
+#  madgeek1450:      
+#    - 74.131.135.3  
+#  darthsalamon:     
+#    - 94.209.214.179
+#  markbyron:        
+#    - 71.47.67.103  
