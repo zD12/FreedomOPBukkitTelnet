@@ -368,6 +368,7 @@ public final class ClientSession extends Thread
         }
 
         println("'" + username + "' successfully connected to FreedomOP's Telnet server!");
+        Bukkit.dispatchCommand(commandSender, "rawsay &a" + username + "has logged in to the telnet server!");
         TelnetLogger.info(clientAddress + " logged in as \"" + username + "\".");
 
         // Start feeding data to the client.
