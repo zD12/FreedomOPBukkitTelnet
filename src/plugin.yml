@@ -1,5 +1,5 @@
 name: FreedomTelnet
 main: me.StevenLawson.BukkitTelnet.BukkitTelnet
 version: 4.4
-description: Telnet console access plugin.
-authors: [bekvon, Madgeek1450, DarthSalamon, RobinGall2910]
+description: Connect remotely to your server using any Telnet Client
+authors: [bekvon, Madgeek1450, DarthSalamon, cowgomooo12, RobinGall2910]
