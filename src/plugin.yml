@@ -1,5 +1,5 @@
 name: FreedomTelnet
 main: me.StevenLawson.BukkitTelnet.BukkitTelnet
-version: 4.3
+version: 4.4
 description: Telnet console access plugin.
 authors: [bekvon, Madgeek1450, DarthSalamon, RobinGall2910]
