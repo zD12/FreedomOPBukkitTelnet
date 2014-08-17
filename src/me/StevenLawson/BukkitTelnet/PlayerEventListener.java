@@ -40,7 +40,7 @@ public class PlayerEventListener implements Listener
 
     private static BukkitTask updateTask = null;
 
-    private static void triggerPlayerListUpdates()
+    public static void triggerPlayerListUpdates()
     {
         if (updateTask != null)
         {
@@ -72,6 +72,7 @@ public class PlayerEventListener implements Listener
 
             info.put("name", player.getName());
             info.put("ip", player.getAddress().getAddress().getHostAddress());
+            info.put("displayName", player.getDisplayName().trim());
 
             players.add(info);
         }

@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 import me.StevenLawson.BukkitTelnet.BukkitTelnet;
+import me.StevenLawson.BukkitTelnet.PlayerEventListener;
 import me.StevenLawson.BukkitTelnet.TelnetConfig;
 import me.StevenLawson.BukkitTelnet.TelnetLogAppender;
 import me.StevenLawson.BukkitTelnet.TelnetLogger;
@@ -460,6 +461,10 @@ public final class ClientSession extends Thread
         {
             enhancedMode = !enhancedMode;
             println((enhancedMode ? "A" : "Dea") + "ctivated enhanced mode.");
+            if (enhancedMode)
+            {
+                PlayerEventListener.triggerPlayerListUpdates();
+            }
         }
         else
         {
