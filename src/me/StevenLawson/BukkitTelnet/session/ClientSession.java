@@ -37,6 +37,7 @@ public final class ClientSession extends Thread
     private BufferedReader reader;
     private String username;
     private boolean hasTerminated;
+    private boolean enhancedMode = false;
 
     public ClientSession(Socket clientSocket)
     {
@@ -410,58 +411,77 @@ public final class ClientSession extends Thread
         }
     }
 
-    private void executeTelnetCommand(String command)
+    private void executeTelnetCommand(final String command)
     {
-        if (command.equalsIgnoreCase("telnet.help"))
+        if ("telnet.help".equalsIgnoreCase(command))
         {
             println("--- Telnet commands ---");
             println("telnet.help  - See all of the telnet commands.");
             println("telnet.stop  - Shut the server down.");
             println("telnet.log   - Change your logging settings.");
             println("telnet.exit  - Quit the telnet session.");
-            return;
         }
-
-        if (command.equalsIgnoreCase("telnet.stop"))
+        else if ("telnet.stop".equalsIgnoreCase(command))
         {
             println("Shutting down the server...");
             TelnetLogger.warning(username + ": Shutting down the server...");
             System.exit(0);
-            return;
         }
-
-        if (command.equalsIgnoreCase("telnet.log"))
+        else if ("telnet.log".equalsIgnoreCase(command))
         {
-            if (filterMode == FilterMode.FULL)
+            switch (filterMode)
             {
-                filterMode = FilterMode.CHAT_ONLY;
-                println("Showing only chat logs.");
-                return;
+                case FULL:
+                {
+                    filterMode = FilterMode.CHAT_ONLY;
+                    println("Showing only chat logs.");
+                    break;
+                }
+                case CHAT_ONLY:
+                {
+                    filterMode = FilterMode.NONCHAT_ONLY;
+                    println("Showing only non-chat logs.");
+                    break;
+                }
+                case NONCHAT_ONLY:
+                {
+                    filterMode = FilterMode.FULL;
+                    println("Showing all logs.");
+                    break;
+                }
             }
-
-            if (filterMode == FilterMode.CHAT_ONLY)
-            {
-                filterMode = FilterMode.NONCHAT_ONLY;
-                println("Showing only non-chat logs.");
-                return;
-            }
-
-            if (filterMode == FilterMode.NONCHAT_ONLY)
-            {
-                filterMode = FilterMode.FULL;
-                println("Showing all logs.");
-                return;
-            }
-            return;
         }
-
-        if (command.equalsIgnoreCase("telnet.exit"))
+        else if ("telnet.exit".equalsIgnoreCase(command))
         {
-            println("Goodbye <3");
+            println("Goodbye.");
             syncTerminateSession();
         }
+        else if ("telnet.enhanced".equalsIgnoreCase(command))
+        {
+            enhancedMode = !enhancedMode;
+            println((enhancedMode ? "A" : "Dea") + "ctivated enhanced mode.");
+        }
+        else
+        {
+            println("Invalid telnet command, use \"telnet.help\" to view help.");
+        }
+    }
 
+    public void syncTriggerPlayerListUpdate(String playerListData)
+    {
+        if (!enhancedMode)
+        {
+            return;
+        }
 
-        println("Invalid telnet command, use \"telnet.help\" to view help.");
+        synchronized (clientSocket)
+        {
+            if (clientSocket.isClosed())
+            {
+                return;
+            }
+
+            println("playerList~" + playerListData);
+        }
     }
 }
