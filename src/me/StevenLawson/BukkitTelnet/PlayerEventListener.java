@@ -10,6 +10,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerKickEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
@@ -37,9 +38,16 @@ public class PlayerEventListener implements Listener
         triggerPlayerListUpdates();
     }
 
+    private static BukkitTask updateTask = null;
+
     private static void triggerPlayerListUpdates()
     {
-        new BukkitRunnable()
+        if (updateTask != null)
+        {
+            updateTask.cancel();
+        }
+
+        updateTask = new BukkitRunnable()
         {
             @Override
             public void run()
@@ -50,7 +58,7 @@ public class PlayerEventListener implements Listener
                     socketListener.triggerPlayerListUpdates(generatePlayerList());
                 }
             }
-        }.runTaskLater(BukkitTelnet.plugin, 20L);
+        }.runTaskLater(BukkitTelnet.plugin, 20L * 2L);
     }
 
     @SuppressWarnings("unchecked")
