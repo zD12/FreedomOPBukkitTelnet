@@ -79,7 +79,7 @@ public class TelnetLogAppender extends AbstractAppender
                 }
             }
 
-            session.printRawln(formatMessage(message, event));
+            session.printRawLine(formatMessage(message, event));
         }
     }
 
