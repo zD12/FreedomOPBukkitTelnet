@@ -1,6 +1,10 @@
 package me.StevenLawson.BukkitTelnet;
 
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import me.StevenLawson.BukkitTelnet.api.TelnetRequestDataTagsEvent;
+import org.apache.commons.lang.StringUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -55,24 +59,40 @@ public class PlayerEventListener implements Listener
                 final SocketListener socketListener = TelnetServer.getInstance().getSocketListener();
                 if (socketListener != null)
                 {
-                    socketListener.triggerPlayerListUpdates(generatePlayerList());
+                    final TelnetRequestDataTagsEvent event = new TelnetRequestDataTagsEvent();
+                    Bukkit.getServer().getPluginManager().callEvent(event);
+                    socketListener.triggerPlayerListUpdates(generatePlayerList(event.getDataTags()));
                 }
             }
         }.runTaskLater(BukkitTelnet.plugin, 20L * 2L);
     }
 
     @SuppressWarnings("unchecked")
-    private static String generatePlayerList()
+    private static String generatePlayerList(final Map<Player, Map<String, Object>> dataTags)
     {
         final JSONArray players = new JSONArray();
 
-        for (final Player player : Bukkit.getServer().getOnlinePlayers())
+        final Iterator<Map.Entry<Player, Map<String, Object>>> dataTagsIt = dataTags.entrySet().iterator();
+        while (dataTagsIt.hasNext())
         {
             final HashMap<String, String> info = new HashMap<String, String>();
 
+            final Map.Entry<Player, Map<String, Object>> dataTagsEntry = dataTagsIt.next();
+            final Player player = dataTagsEntry.getKey();
+            final Map<String, Object> playerTags = dataTagsEntry.getValue();
+
             info.put("name", player.getName());
             info.put("ip", player.getAddress().getAddress().getHostAddress());
-            info.put("displayName", player.getDisplayName().trim());
+            info.put("displayName", StringUtils.trimToEmpty(player.getDisplayName()));
+            info.put("uuid", player.getUniqueId().toString());
+
+            final Iterator<Map.Entry<String, Object>> playerTagsIt = playerTags.entrySet().iterator();
+            while (playerTagsIt.hasNext())
+            {
+                final Map.Entry<String, Object> playerTagsEntry = playerTagsIt.next();
+                final Object value = playerTagsEntry.getValue();
+                info.put(playerTagsEntry.getKey(), value != null ? value.toString() : "null");
+            }
 
             players.add(info);
         }
