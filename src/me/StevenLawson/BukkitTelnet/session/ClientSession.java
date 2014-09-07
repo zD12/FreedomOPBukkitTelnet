@@ -272,10 +272,14 @@ public final class ClientSession extends Thread
             }
             catch (IOException ex)
             {
-                continue;
+                break;
             }
 
-            if (input == null || input.isEmpty()) // End of stream
+            if (input == null)
+            {
+                break;
+            }
+            if (input.isEmpty())
             {
                 continue;
             }
@@ -319,10 +323,14 @@ public final class ClientSession extends Thread
             }
             catch (IOException ex)
             {
-                continue;
+                break;
             }
 
-            if (input == null || input.isEmpty()) // End of stream
+            if (input == null)
+            {
+                break;
+            }
+            if (input.isEmpty())
             {
                 continue;
             }
@@ -371,7 +379,7 @@ public final class ClientSession extends Thread
             }
             catch (IOException ex)
             {
-                continue;
+                break;
             }
 
             if (command == null)
