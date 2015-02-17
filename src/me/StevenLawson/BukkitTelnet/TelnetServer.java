@@ -81,6 +81,11 @@ public class TelnetServer
         socketListener.stopServer();
     }
 
+    public SocketListener getSocketListener()
+    {
+        return socketListener;
+    }
+
     public static TelnetServer getInstance()
     {
         return TelnetServerHolder.INSTANCE;

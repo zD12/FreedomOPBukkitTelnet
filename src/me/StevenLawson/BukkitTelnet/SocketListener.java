@@ -50,11 +50,25 @@ public class SocketListener extends Thread
         while (it.hasNext())
         {
             final ClientSession session = it.next();
-            
+
             if (!session.syncIsConnected())
             {
                 TelnetLogAppender.getInstance().removeSession(session);
                 it.remove();
+            }
+        }
+    }
+
+    public void triggerPlayerListUpdates(final String playerListData)
+    {
+        final Iterator<ClientSession> it = clientSessions.iterator();
+
+        while (it.hasNext())
+        {
+            final ClientSession session = it.next();
+            if (session != null)
+            {
+                session.syncTriggerPlayerListUpdate(playerListData);
             }
         }
     }

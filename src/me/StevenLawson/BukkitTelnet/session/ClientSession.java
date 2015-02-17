@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 import me.StevenLawson.BukkitTelnet.BukkitTelnet;
+import me.StevenLawson.BukkitTelnet.PlayerEventListener;
 import me.StevenLawson.BukkitTelnet.TelnetConfig;
 import me.StevenLawson.BukkitTelnet.TelnetLogAppender;
 import me.StevenLawson.BukkitTelnet.TelnetLogger;
@@ -37,6 +38,7 @@ public final class ClientSession extends Thread
     private BufferedReader reader;
     private String username;
     private boolean hasTerminated;
+    private boolean enhancedMode = false;
 
     public ClientSession(Socket clientSocket)
     {
@@ -68,12 +70,11 @@ public final class ClientSession extends Thread
             return;
         }
 
-        printRaw(":");
-        println("Session Started.");
+        writeLine("Session Started.");
 
         if (!authenticate())
         {
-            println("Authentication failed.");
+            writeLine("Authentication failed.");
             syncTerminateSession();
         }
 
@@ -108,7 +109,7 @@ public final class ClientSession extends Thread
                 return;
             }
 
-            println("Closing connection...");
+            writeLine("Closing connection...");
             try
             {
                 clientSocket.close();
@@ -140,7 +141,7 @@ public final class ClientSession extends Thread
         this.filterMode = filterMode;
     }
 
-    public void printRaw(String message)
+    public void printRawLine(String message)
     {
         if (writer == null || !syncIsConnected())
         {
@@ -149,7 +150,7 @@ public final class ClientSession extends Thread
 
         try
         {
-            writer.write(ChatColor.stripColor(message));
+            writer.write(":" + ChatColor.stripColor(message) + "\r\n");
             writer.flush();
         }
         catch (IOException ex)
@@ -157,19 +158,9 @@ public final class ClientSession extends Thread
         }
     }
 
-    public void printRawln(String message)
+    public void writeLine(String message)
     {
-        printRaw(message + "\r\n:");
-    }
-
-    public void print(String message)
-    {
-        printRaw("[" + (username.isEmpty() ? "" : username + "@") + "BukkitTelnet]$ " + message);
-    }
-
-    public void println(String message)
-    {
-        print(message + "\r\n:");
+        printRawLine("[" + (username.isEmpty() ? "" : username + "@") + "BukkitTelnet]$ " + message);
     }
 
     public void flush()
@@ -272,7 +263,7 @@ public final class ClientSession extends Thread
         int tries = 0;
         while (tries++ < 3)
         {
-            print("Username: ");
+            writeLine("Username: ");
 
             String input;
             try
@@ -281,12 +272,14 @@ public final class ClientSession extends Thread
             }
             catch (IOException ex)
             {
-                continue;
+                break;
             }
 
-            printRaw(":");
-
-            if (input == null || input.isEmpty()) // End of stream
+            if (input == null)
+            {
+                break;
+            }
+            if (input.isEmpty())
             {
                 continue;
             }
@@ -295,7 +288,7 @@ public final class ClientSession extends Thread
 
             if (input.isEmpty())
             {
-                println("Invalid username.");
+                writeLine("Invalid username.");
                 continue;
             }
 
@@ -320,7 +313,7 @@ public final class ClientSession extends Thread
         tries = 0;
         while (tries++ < 3)
         {
-            print("Password: ");
+            writeLine("Password: ");
 
             String input;
 
@@ -330,12 +323,14 @@ public final class ClientSession extends Thread
             }
             catch (IOException ex)
             {
-                continue;
+                break;
             }
 
-            printRaw(":");
-
-            if (input == null || input.isEmpty()) // End of stream
+            if (input == null)
+            {
+                break;
+            }
+            if (input.isEmpty())
             {
                 continue;
             }
@@ -347,7 +342,7 @@ public final class ClientSession extends Thread
                 return true;
             }
 
-            println("Invalid password.");
+            writeLine("Invalid password.");
             try
             {
                 Thread.sleep(2000);
@@ -367,7 +362,7 @@ public final class ClientSession extends Thread
             return;
         }
 
-        println("Logged in as " + username + ".");
+        writeLine("Logged in as " + username + ".");
         TelnetLogger.info(clientAddress + " logged in as \"" + username + "\".");
 
         // Start feeding data to the client.
@@ -384,12 +379,14 @@ public final class ClientSession extends Thread
             }
             catch (IOException ex)
             {
-                continue;
+                break;
             }
 
-            printRaw(":");
-
-            if (command == null || command.isEmpty()) // End of stream
+            if (command == null)
+            {
+                break;
+            }
+            else if (command.isEmpty())
             {
                 continue;
             }
@@ -410,58 +407,81 @@ public final class ClientSession extends Thread
         }
     }
 
-    private void executeTelnetCommand(String command)
+    private void executeTelnetCommand(final String command)
     {
-        if (command.equalsIgnoreCase("telnet.help"))
+        if ("telnet.help".equalsIgnoreCase(command))
         {
-            println("--- Telnet commands ---");
-            println("telnet.help  - See all of the telnet commands.");
-            println("telnet.stop  - Shut the server down.");
-            println("telnet.log   - Change your logging settings.");
-            println("telnet.exit  - Quit the telnet session.");
-            return;
+            writeLine("--- Telnet commands ---");
+            writeLine("telnet.help  - See all of the telnet commands.");
+            writeLine("telnet.stop  - Shut the server down.");
+            writeLine("telnet.log   - Change your logging settings.");
+            writeLine("telnet.exit  - Quit the telnet session.");
         }
-
-        if (command.equalsIgnoreCase("telnet.stop"))
+        else if ("telnet.stop".equalsIgnoreCase(command))
         {
-            println("Shutting down the server...");
+            writeLine("Shutting down the server...");
             TelnetLogger.warning(username + ": Shutting down the server...");
             System.exit(0);
-            return;
         }
-
-        if (command.equalsIgnoreCase("telnet.log"))
+        else if ("telnet.log".equalsIgnoreCase(command))
         {
-            if (filterMode == FilterMode.FULL)
+            switch (filterMode)
             {
-                filterMode = FilterMode.CHAT_ONLY;
-                println("Showing only chat logs.");
-                return;
+                case FULL:
+                {
+                    filterMode = FilterMode.CHAT_ONLY;
+                    writeLine("Showing only chat logs.");
+                    break;
+                }
+                case CHAT_ONLY:
+                {
+                    filterMode = FilterMode.NONCHAT_ONLY;
+                    writeLine("Showing only non-chat logs.");
+                    break;
+                }
+                case NONCHAT_ONLY:
+                {
+                    filterMode = FilterMode.FULL;
+                    writeLine("Showing all logs.");
+                    break;
+                }
             }
-
-            if (filterMode == FilterMode.CHAT_ONLY)
-            {
-                filterMode = FilterMode.NONCHAT_ONLY;
-                println("Showing only non-chat logs.");
-                return;
-            }
-
-            if (filterMode == FilterMode.NONCHAT_ONLY)
-            {
-                filterMode = FilterMode.FULL;
-                println("Showing all logs.");
-                return;
-            }
-            return;
         }
-
-        if (command.equalsIgnoreCase("telnet.exit"))
+        else if ("telnet.exit".equalsIgnoreCase(command))
         {
-            println("Goodbye <3");
+            writeLine("Goodbye.");
             syncTerminateSession();
         }
+        else if ("telnet.enhanced".equalsIgnoreCase(command))
+        {
+            enhancedMode = !enhancedMode;
+            writeLine((enhancedMode ? "A" : "Dea") + "ctivated enhanced mode.");
+            if (enhancedMode)
+            {
+                PlayerEventListener.triggerPlayerListUpdates();
+            }
+        }
+        else
+        {
+            writeLine("Invalid telnet command, use \"telnet.help\" to view help.");
+        }
+    }
 
+    public void syncTriggerPlayerListUpdate(String playerListData)
+    {
+        if (!enhancedMode)
+        {
+            return;
+        }
 
-        println("Invalid telnet command, use \"telnet.help\" to view help.");
+        synchronized (clientSocket)
+        {
+            if (clientSocket.isClosed())
+            {
+                return;
+            }
+
+            writeLine("playerList~" + playerListData);
+        }
     }
 }

@@ -31,6 +31,7 @@ public class BukkitTelnet extends JavaPlugin
 
         TelnetLogger.info(plugin.getName() + " v" + plugin.getDescription().getVersion() + " enabled");
 
+        this.getServer().getPluginManager().registerEvents(new PlayerEventListener(), plugin);
     }
 
     @Override

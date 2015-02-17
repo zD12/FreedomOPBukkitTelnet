@@ -21,7 +21,7 @@ public class SessionCommandSender implements CommandSender
     @Override
     public void sendMessage(String message)
     {
-        session.printRaw(message + "\r\n:");
+        session.printRawLine(message);
     }
 
     @Override
